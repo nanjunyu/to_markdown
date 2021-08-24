@@ -1,0 +1,37 @@
+```java
+public static String createSign(SortedMap<String, String> packageParams, String paykey, String charset)
+        throws PayRuntimeException {
+    StringBuffer sb = new StringBuffer();
+    Set es = packageParams.entrySet();
+    Iterator it = es.iterator();
+    while (it.hasNext()) {
+        Map.Entry entry = (Map.Entry) it.next();
+        String k = (String) entry.getKey();
+        String v = (String) entry.getValue();
+        if ((null != v) && (!("".equals(v))) && (!("sign".equals(k))) && (!("key".equals(k))) && (!("undefined".equals(k)))) {
+            sb.append(k + "=" + v + "&");
+        }
+    }
+    sb.append("key=" + paykey);
+    String sign = MD5Util.MD5Encode(sb.toString(), charset).toUpperCase();
+    return sign;
+ } 
+ public static String MD5Encode(String origin, String charsetname) throws PayRuntimeException
+{
+  String resultString = null;
+  try
+  {
+    resultString = new String(origin);
+    MessageDigest md = MessageDigest.getInstance("MD5");
+    if ((charsetname == null) || ("".equals(charsetname)))
+      resultString = byteArrayToHexString(md.digest(resultString.getBytes()));
+    else
+      resultString = byteArrayToHexString(md.digest(resultString.getBytes(charsetname)));
+  }
+  catch (Exception exception)
+  {
+    throw new PayRuntimeException("参数MD5加密出错！");
+  }
+  return resultString;
+}
+```

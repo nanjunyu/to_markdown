@@ -1,0 +1,214 @@
+ZooKeeper是一个分布式的，开放源码的分布式应用程序协调服务，是Google的Chubby一个开源的实现，它是集群的管理者，监视着集群中各个节点的状态根据节点提交的反馈进行下一步合理操作。最终，将简单易用的接口和性能高效、功能稳定的系统提供给用户。
+
+本帖没技术难度，最近在巩固zk这一块，记录下日后参考。
+
+### 1.在linux上安装最新的zookeeper 
+
+[http://mirror.bit.edu.cn/apache/zookeeper/zookeeper-3.5.4-beta/][http_mirror.bit.edu.cn_apache_zookeeper_zookeeper-3.5.4-beta]，这里我们下载最新的。
+
+ 拷贝到服务器 usr/local下
+
+```java
+ tar -zxvf zookeeper-3.5.4-beta.tar.gz
+```
+
+  
+
+
+![pic_6750ee0c.png](http://127.0.0.1:9999/images/pic_6750ee0c.png)
+
+2.修改配置
+
+```java
+cd /usr/local/zookeeper-3.5.4-beta/conf
+```
+
+拷贝zoo\_samle.cfg为zoo.cfg
+
+```java
+cp zoo_sample.cfg zoo.cfg  
+```
+
+编辑zoo.cfg文件
+
+vi zoo.cfg 
+
+```java
+# The number of milliseconds of each tick
+tickTime=2000
+# The number of ticks that the initial
+# synchronization phase can take
+initLimit=10
+# The number of ticks that can pass between
+# sending a request and getting an acknowledgement
+syncLimit=5
+# the directory where the snapshot is stored.
+# do not use /tmp for storage, /tmp here is just
+# example sakes.
+dataDir=/usr/local/zookeeper-3.5.4-beta/data
+dataLogDir=/usr/local/zookeeper-3.5.4-beta/logs
+# the port at which the clients will connect
+clientPort=2181
+admin.serverPort=8081
+# the maximum number of client connections.
+# increase this if you need to handle more clients
+#maxClientCnxns=60
+#
+# Be sure to read the maintenance section of the
+# administrator guide before turning on autopurge.
+#
+"zoo.cfg" 30L, 1014C
+```
+
+![pic_30560411.png](http://127.0.0.1:9999/images/pic_30560411.png)
+
+环境变量设置
+
+```java
+export ZOOKEEPER_INSTALL=/usr/local/zookeeper-3.5.4-beta/
+export PATH=$PATH:$ZOOKEEPER_INSTALL/bin
+```
+
+![pic_d5e687a7.png](http://127.0.0.1:9999/images/pic_d5e687a7.png)
+
+启动
+
+```java
+cd /usr/local/zookeeper-3.5.4-beta/bin
+
+./zkServer.sh start  
+```
+
+![pic_73d5bb90.png](http://127.0.0.1:9999/images/pic_73d5bb90.png)
+
+打开控制台看看
+
+![pic_8033b87d.png](http://127.0.0.1:9999/images/pic_8033b87d.png)
+
+3.在springBoot环境下集成
+
+pom文件增加依赖
+
+```java
+<dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>3.4.6</version>
+        </dependency>
+```
+
+增加测试类
+
+```java
+package com.springboot.buy.zookeeper;
+
+import org.apache.zookeeper.*;
+import org.apache.zookeeper.ZooDefs.Ids;
+import org.apache.zookeeper.data.Stat;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.List;
+
+/**
+ * @Author: nanJunYu
+ * @Description:zookeeper客户端
+ * @Date: Create in  2018/8/16 16:03
+ * @params:
+ * @return:
+ */
+public class TestZkClient {
+
+    private static final String connectString = "10.x.x.x:2181";
+    private static final int sessionTimeout = 30000;
+
+    public static ZooKeeper zkClient = null;
+
+    @Before
+    public void init() throws Exception {
+        zkClient = new ZooKeeper(connectString, sessionTimeout, new Watcher() {
+            @Override
+            public void process(WatchedEvent event) {
+                // 收到事件通知后的回调函数（应该是我们自己的事件处理逻辑）
+                System.out.println(event.getType() + "---" + event.getPath());
+                try {
+                    zkClient.getChildren("/", true);
+                } catch (Exception e) {
+                }
+            }
+        });
+
+    }
+
+    /**
+     * 数据的增删改查
+     *
+     * @throws InterruptedException
+     * @throws KeeperException
+     */
+
+    // 创建数据节点到zk中
+    @Test
+    public void testCreate() throws KeeperException, InterruptedException {
+        // 参数1：要创建的节点的路径 参数2：节点大数据 参数3：节点的权限 参数4：节点的类型
+        zkClient.create("/frank", "hello..zk".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        //上传的数据可以是任何类型，但都要转成byte[]
+        System.out.println("frank...node create success！");
+    }
+
+    @Test
+    public void testDelete() throws KeeperException, InterruptedException {
+        zkClient.delete("/frank", -1);
+        System.out.println("frank...node delete success！");
+    }
+
+    //判断znode是否存在
+    @Test
+    public void testExist() throws Exception {
+        Stat stat = zkClient.exists("/frank", false);
+        System.out.println(stat == null ? "not exist" : "exist");
+
+
+    }
+
+    // 获取子节点
+    @Test
+    public void getChildren() throws Exception {
+        List<String> children = zkClient.getChildren("/", true);
+        for (String child : children) {
+            System.out.println(child);
+        }
+        Thread.sleep(Long.MAX_VALUE);
+    }
+
+    //获取znode的数据
+    @Test
+    public void getData() throws Exception {
+
+        byte[] data = zkClient.getData("/frank", false, null);
+        System.out.println(new String(data));
+
+    }
+
+    //删除znode
+    @Test
+    public void setData() throws Exception {
+
+        zkClient.setData("/frank", "i miss you gao ya shu!".getBytes(), -1);
+        byte[] data = zkClient.getData("/frank", false, null);
+        System.out.println(new String(data));
+
+    }
+
+
+}
+```
+
+我们看下运行结果
+
+![pic_25c87419.png](http://127.0.0.1:9999/images/pic_25c87419.png)
+
+感谢观看！
+
+
+[http_mirror.bit.edu.cn_apache_zookeeper_zookeeper-3.5.4-beta]: http://mirror.bit.edu.cn/apache/zookeeper/zookeeper-3.5.4-beta/

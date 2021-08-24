@@ -1,0 +1,178 @@
+目录
+
+[1.前提][1.]
+
+[2.配置主机名到IP地址的映射][2._IP]
+
+[3.修改zoo.cfg配置][3._zoo.cfg]
+
+[4.新建myid文件并写入集群标识][4._myid]
+
+[5.在另外两台机器进行相同操作][5.]
+
+[6.查看集群状态配置结束][6.]
+
+接着上一篇博客linux下zookeeper单机搭建，本篇进阶一下，利用三台机器进行集群操作。保证高可用。
+
+### 1.前提 
+
+作者默认读者已经准备好了三台不同ip的机器或者虚拟机，并且都已经安装好jdk，linux 下zookeeper安装教程可以参考我的另一篇博客。
+
+[https://blog.csdn.net/u010199866/article/details/81742866][https_blog.csdn.net_u010199866_article_details_81742866]
+
+以下是zookeeper真集群配置教程
+
+我们准备的三台机器ip分别为
+
+```java
+xx.xx.xx.1
+xx.xx.xx.2
+xx.xx.xx.3
+```
+
+### 2.配置主机名到IP地址的映射 
+
+(此步骤不是必须的,我们可以直接在zk的配置文件中填写IP地址)，这样配置的好处是如果某个IP地址发生了变化，我们不需要重启zookeeper，直接修改主机对应的IP地址即可。
+
+直接修改/etc/hosts文件，设置主机zoo-1映射到x.x.x.1，设置主机zoo-2映射到x.x.x.2，设置主机zoo-3映射到x.x.x.3
+
+三台机器都需要相同的hosts配置
+
+```java
+vim /etc/hosts
+```
+
+```java
+x.x.x.1 zoo-1
+x.x.x.2 zoo-2
+x.x.x.3 zoo-3
+```
+
+![pic_9dc1b4f3.png](http://127.0.0.1:9999/images/pic_9dc1b4f3.png)
+
+### 3.修改zoo.cfg配置 
+
+```java
+vi zoo.cfg
+```
+
+以下是需要在zoo.cfg中增加的配置
+
+```java
+server.1=zoo-1:2888:3888
+server.2=zoo-2:2888:3888
+server.3=zoo-3:2888:3888
+```
+
+配置完成效果
+
+![pic_a43e9e9d.png](http://127.0.0.1:9999/images/pic_a43e9e9d.png)
+
+### 4.新建myid文件并写入集群标识 
+
+在dataDir目录中，创建一个名为myid的文件，并写入机器对应的数字值，比如我们是在zoo-1的机器上，就将该值设置为1，即集群中sever.1=zoo-1:2888:3888中server.后对应的数字。这是zookeeper用来识别是那一台集群机器的标识。
+
+```java
+echo "1" > /usr/local/zookeeper-3.5.4-beta/myid
+```
+
+这里一台机器的集群配置完成了，接下来我们在另外两台机器上进行相同的操作，安装分别zk，配置一摸一样就行，唯一一个地方需要修改的就是myid的文件。
+
+注：此处唯一不同的地方是每个dataDir下的myid中的内容要按照zoo.cfg配置文件中的集群信息设置。比如：x.x.x.2对应集群中的server.2，所以在myid中写入2
+
+### 5.在另外两台机器进行相同操作 
+
+所以在其他两台机器安装时，直接scp命令复制过去就行，只需要改这个myid文件。
+
+到此为止我们三台机器都配置了集群信息。
+
+### 6.查看集群状态配置结束 
+
+我们分别启动机器1，机器2，机器3.集群会自动选举出一台服务器作为leader，其余服务器为follower，可以在每台服务器上使用命令查看服务器是什么类型的。
+
+```java
+zkServer.sh status
+```
+
+![pic_e13564d5.png](http://127.0.0.1:9999/images/pic_e13564d5.png)
+
+![pic_06b77ae7.png](http://127.0.0.1:9999/images/pic_06b77ae7.png)
+
+![pic_3d2adfc1.png](http://127.0.0.1:9999/images/pic_3d2adfc1.png)
+
+可以通过客户端，连接到ZooKeeper集群上。对于客户端来说，ZooKeeper是一个整体（ensemble），你可以在任何一个结点上建立到服务集群的连接，例如：
+
+```java
+[root@web-login-134 bin]# zkCli.sh -server x.x.x.1:2181
+Connecting to 10.137.35.134:2181
+2018-08-21 15:30:29,656 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:zookeeper.version=3.5.4-beta-7f51e5b68cf2f80176ff944a9ebd2abbc65e7327, built                                                                              on 05/11/2018 16:27 GMT
+2018-08-21 15:30:29,659 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:host.name=localhost
+2018-08-21 15:30:29,660 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.version=1.8.0_181
+2018-08-21 15:30:29,662 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.vendor=Oracle Corporation
+2018-08-21 15:30:29,663 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.home=/usr/java/jdk1.8.0_181/jre
+2018-08-21 15:30:29,663 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.class.path=/usr/local/zookeeper-3.5.4-beta/bin/../build/classes:/usr/lo                                                                             cal/zookeeper-3.5.4-beta/bin/../build/lib/*.jar:/usr/local/zookeeper-3.5.4-beta/                                                                             bin/../lib/slf4j-log4j12-1.7.25.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/s                                                                             lf4j-api-1.7.25.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/netty-3.10.6.Fina                                                                             l.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/log4j-1.2.17.jar:/usr/local/zoo                                                                             keeper-3.5.4-beta/bin/../lib/jline-2.11.jar:/usr/local/zookeeper-3.5.4-beta/bin/                                                                             ../lib/jetty-util-9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../li                                                                             b/jetty-servlet-9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/                                                                             jetty-server-9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/jet                                                                             ty-security-9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/jett                                                                             y-io-9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/jetty-http-                                                                             9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/javax.servlet-ap                                                                             i-3.1.0.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/jackson-mapper-asl-1.9.11                                                                             .jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/jackson-core-asl-1.9.11.jar:/usr                                                                             /local/zookeeper-3.5.4-beta/bin/../lib/commons-cli-1.2.jar:/usr/local/zookeeper-                                                                             3.5.4-beta/bin/../lib/audience-annotations-0.5.0.jar:/usr/local/zookeeper-3.5.4-                                                                             beta/bin/../zookeeper-3.5.4-beta.jar:/usr/local/zookeeper-3.5.4-beta/bin/../src/                                                                             java/lib/*.jar:/usr/local/zookeeper-3.5.4-beta/bin/../conf:.:/usr/java/jdk1.8.0_                                                                             181/lib:/usr/java/jdk1.8.0_181/jre/lib:
+2018-08-21 15:30:29,663 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.library.path=:/usr/local/lib:/usr/java/packages/lib/amd64:/usr/lib64:/l                                                                             ib64:/lib:/usr/lib
+2018-08-21 15:30:29,663 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.io.tmpdir=/tmp
+2018-08-21 15:30:29,663 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.compiler=<NA>
+2018-08-21 15:30:29,663 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.name=Linux
+2018-08-21 15:30:29,663 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.arch=amd64
+2018-08-21 15:30:29,664 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.version=2.6.32-431.el6.x86_64
+2018-08-21 15:30:29,664 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:user.name=root
+2018-08-21 15:30:29,664 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:user.home=/root
+2018-08-21 15:30:29,664 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:user.dir=/usr/local/zookeeper-3.5.4-beta/bin
+2018-08-21 15:30:29,664 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.memory.free=113MB
+2018-08-21 15:30:29,666 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.memory.max=228MB
+2018-08-21 15:30:29,666 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.memory.total=119MB
+2018-08-21 15:30:29,671 [myid:] - INFO  [main:ZooKeeper@868] - Initiating client                                                                              connection, connectString=-------:2181 sessionTimeout=30000 watcher=org.a                                                                             pache.zookeeper.ZooKeeperMain$MyWatcher@64a294a6
+2018-08-21 15:30:29,712 [myid:] - INFO  [main:ClientCnxnSocket@236] - jute.maxbu                                                                             ffer value is 4194304 Bytes
+Welcome to ZooKeeper!
+2018-08-21 15:30:29,736 [myid:1---------:2181] - INFO  [main-SendThread(10.13                                                                             7.35.134:2181):ClientCnxn$SendThread@1106] - Opening socket connection to server                                                                              10.137.35.134/10.137.35.134:2181. Will not attempt to authenticate using SASL (                                                                             unknown error)
+JLine support is enabled
+2018-08-21 15:30:29,866 [myid:10.137.35.134:2181] - INFO  [main-SendThread(------------:2181):ClientCnxn$SendThread@947] - Socket connection established, initi                                                                             ating session, client: /----------:56782, server: ----------/-----------                                                                             :2181
+[zk: -----------:2181(CONNECTING) 0] 2018-08-21 15:30:29,917 [myid:10.137.35.1                                                                             34:2181] - INFO  [main-SendThread(10.137.35.134:2181):ClientCnxn$SendThread@1381                                                                             ] - Session establishment complete on server 10.137.35.134/10.137.35.134:2181, s                                                                             essionid = 0x3083dea7eed0000, negotiated timeout = 30000
+
+WATCHER::
+
+WatchedEvent state:SyncConnected type:None path:null
+[root@web-login-134 bin]# zkCli.sh -server x.x.x.2:2181
+Connecting to 10.137.35.132:2181
+2018-08-21 15:30:39,515 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:zookeeper.version=3.5.4-beta-7f51e5b68cf2f80176ff944a9ebd2abbc65e7327, built                                                                              on 05/11/2018 16:27 GMT
+2018-08-21 15:30:39,521 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:host.name=localhost
+2018-08-21 15:30:39,521 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.version=1.8.0_181
+2018-08-21 15:30:39,525 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.vendor=Oracle Corporation
+2018-08-21 15:30:39,526 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.home=/usr/java/jdk1.8.0_181/jre
+2018-08-21 15:30:39,526 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.class.path=/usr/local/zookeeper-3.5.4-beta/bin/../build/classes:/usr/lo                                                                             cal/zookeeper-3.5.4-beta/bin/../build/lib/*.jar:/usr/local/zookeeper-3.5.4-beta/                                                                             bin/../lib/slf4j-log4j12-1.7.25.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/s                                                                             lf4j-api-1.7.25.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/netty-3.10.6.Fina                                                                             l.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/log4j-1.2.17.jar:/usr/local/zoo                                                                             keeper-3.5.4-beta/bin/../lib/jline-2.11.jar:/usr/local/zookeeper-3.5.4-beta/bin/                                                                             ../lib/jetty-util-9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../li                                                                             b/jetty-servlet-9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/                                                                             jetty-server-9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/jet                                                                             ty-security-9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/jett                                                                             y-io-9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/jetty-http-                                                                             9.2.18.v20160721.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/javax.servlet-ap                                                                             i-3.1.0.jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/jackson-mapper-asl-1.9.11                                                                             .jar:/usr/local/zookeeper-3.5.4-beta/bin/../lib/jackson-core-asl-1.9.11.jar:/usr                                                                             /local/zookeeper-3.5.4-beta/bin/../lib/commons-cli-1.2.jar:/usr/local/zookeeper-                                                                             3.5.4-beta/bin/../lib/audience-annotations-0.5.0.jar:/usr/local/zookeeper-3.5.4-                                                                             beta/bin/../zookeeper-3.5.4-beta.jar:/usr/local/zookeeper-3.5.4-beta/bin/../src/                                                                             java/lib/*.jar:/usr/local/zookeeper-3.5.4-beta/bin/../conf:.:/usr/java/jdk1.8.0_                                                                             181/lib:/usr/java/jdk1.8.0_181/jre/lib:
+2018-08-21 15:30:39,526 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.library.path=:/usr/local/lib:/usr/java/packages/lib/amd64:/usr/lib64:/l                                                                             ib64:/lib:/usr/lib
+2018-08-21 15:30:39,526 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.io.tmpdir=/tmp
+2018-08-21 15:30:39,527 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:java.compiler=<NA>
+2018-08-21 15:30:39,527 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.name=Linux
+2018-08-21 15:30:39,527 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.arch=amd64
+2018-08-21 15:30:39,527 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.version=2.6.32-431.el6.x86_64
+2018-08-21 15:30:39,527 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:user.name=root
+2018-08-21 15:30:39,527 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:user.home=/root
+2018-08-21 15:30:39,528 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:user.dir=/usr/local/zookeeper-3.5.4-beta/bin
+2018-08-21 15:30:39,528 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.memory.free=113MB
+2018-08-21 15:30:39,531 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.memory.max=228MB
+2018-08-21 15:30:39,531 [myid:] - INFO  [main:Environment@109] - Client environm                                                                             ent:os.memory.total=119MB
+2018-08-21 15:30:39,536 [myid:] - INFO  [main:ZooKeeper@868] - Initiating client                                                                              connection, connectString=10.137.35.132:2181 sessionTimeout=30000 watcher=org.a                                                                             pache.zookeeper.ZooKeeperMain$MyWatcher@64a294a6
+2018-08-21 15:30:39,555 [myid:] - INFO  [main:ClientCnxnSocket@236] - jute.maxbu                                                                             ffer value is 4194304 Bytes
+Welcome to ZooKeeper!
+2018-08-21 15:30:39,577 [myid:10.137.35.132:2181] - INFO  [main-SendThread(10.13                                                                             7.35.132:2181):ClientCnxn$SendThread@1106] - Opening socket connection to server                                                                              10.137.35.132/10.137.35.132:2181. Will not attempt to authenticate using SASL (                                                                             unknown error)
+JLine support is enabled
+2018-08-21 15:30:39,739 [myid:10.137.35.132:2181] - INFO  [main-SendThread(10.13                                                                             7.35.132:2181):ClientCnxn$SendThread@947] - Socket connection established, initi                                                                             ating session, client: /10.137.35.134:34479, server: 10.137.35.132/10.137.35.132                                                                             :2181
+2018-08-21 15:30:39,758 [myid:10.137.35.132:2181] - INFO  [main-SendThread(10.13                                                                             7.35.132:2181):ClientCnxn$SendThread@1381] - Session establishment complete on s                                                                             erver 10.137.35.132/10.137.35.132:2181, sessionid = 0x103486345220000, negotiate                                                                             d timeout = 30000
+
+WATCHER::
+
+WatchedEvent state:SyncConnected type:None path:null
+[zk: 10.137.35.132:2181(CONNECTED) 0]
+```
+
+
+[1.]: #1.%E5%89%8D%E6%8F%90
+[2._IP]: #2%E3%80%81%E9%85%8D%E7%BD%AE%E4%B8%BB%E6%9C%BA%E5%90%8D%E5%88%B0IP%E5%9C%B0%E5%9D%80%E7%9A%84%E6%98%A0%E5%B0%84
+[3._zoo.cfg]: #3.%E4%BF%AE%E6%94%B9zoo.cfg%E9%85%8D%E7%BD%AE
+[4._myid]: #4.%E6%96%B0%E5%BB%BAmyid%E6%96%87%E4%BB%B6%E5%B9%B6%E5%86%99%E5%85%A5%E9%9B%86%E7%BE%A4%E6%A0%87%E8%AF%86
+[5.]: #5.%E5%9C%A8%E5%8F%A6%E5%A4%96%E4%B8%A4%E5%8F%B0%E6%9C%BA%E5%99%A8%E8%BF%9B%E8%A1%8C%E7%9B%B8%E5%90%8C%E6%93%8D%E4%BD%9C
+[6.]: #6.%E6%9F%A5%E7%9C%8B%E9%9B%86%E7%BE%A4%E7%8A%B6%E6%80%81%E9%85%8D%E7%BD%AE%E7%BB%93%E6%9D%9F
+[https_blog.csdn.net_u010199866_article_details_81742866]: https://blog.csdn.net/u010199866/article/details/81742866

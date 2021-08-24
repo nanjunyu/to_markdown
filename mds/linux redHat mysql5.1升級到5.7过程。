@@ -1,0 +1,233 @@
+最近准备升级一下mysql版本由于之前使用的是5.1有些老了，准备升级到5.7，于是在测试环境进行升级测试，在这里记录下我操作的过程，免得多年后再用的时候到处百度，也供网友参考。
+
+  
+
+
+分以下4个大步骤
+
+  
+
+
+1.备份老的mysql数据库
+
+2.完全卸载干净老的mysql数据库，并安装新的mysql5.7
+
+3.恢复数据
+
+  
+
+
+好了思路清晰我们就开始吧，下面我们开始备份老的数据库。
+
+我们是一个细心给足自己后路的人，所以这里我们把好的几个备份方式全用上，都备份一次，因为可能会有不好的结果。
+
+首先我们使用mysql推荐的两种方式进行备份
+
+  
+
+
+1使用mysqldump来备份mysql数据库：
+
+```java
+mysqldump -u root -p web > /root/mysqlBak/2018-07-11_web.sql
+root是用户名  web是我要备份的数据库 后面是想保存到的路径,这里我们执行可能会报错。
+```
+
+mysqldump: Got error: 1356: View 'wordpress.v\_t1' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them when using LOCK TABLES  
+
+
+大概意思就是你备份的数据库里面有的视图里关联的表不存在。
+
+原因: 视图引用的表不存在。
+
+原理：mysqldump在备份时要对表加读锁，加锁失败的时候。备份就终止了。
+
+解决方法：在备份时加上--force参数，我们再次执行虽然有提示错误但不影响备份，备份结束我们检查一下路径下是否生产备份文件。
+
+mysqldump -u root -p web -force > /root/mysqlBak/2018-07-11\_web.sql  
+
+
+![pic_37b88bf3.png](http://127.0.0.1:9999/images/pic_37b88bf3.png)  
+
+
+  
+
+
+我们再来操作一个官方推荐的第二种备份方式，
+
+2.直接备份数据库文件：
+
+  
+
+
+注意备份之前一定要停掉mysql服务，并且还需要备份数据库对应目录同级下的ibdata1文件 否则会导致InnoDB类型的表数据恢复失败。
+
+  
+
+
+ibdata1是InnoDB的共有表空间，默认情况下会把表空间存放在一个文件ibdata1中。所以这里建议备份整个mysql数据库文件  
+
+
+mv /var/lib/mysql/\* /var/lib/mydb\_2018-07\-11\_bak/  
+
+
+  
+
+
+完美主义者，细心的我们再用可视化的第三方工具备份一下  
+
+
+  
+
+
+3.然后用Navicat for MySQL工具也做个全量备份
+
+![pic_4fc90e6d.png](http://127.0.0.1:9999/images/pic_4fc90e6d.png)  
+
+
+  
+
+
+然后我们全选，点开始这样就备份好了
+
+![pic_94917e89.png](http://127.0.0.1:9999/images/pic_94917e89.png)  
+
+
+但是强迫症的我还是害怕会出现问题，因为数据库这东西太敏感了，我是踩过坑的，各种问题导致恢复失败，所以我再用Navicat for MySQL备份下整个库的sql文件，因为毕竟这种方式毕竟传统一点。
+
+  
+
+
+2.这里我们在要备份的数据库右键选择转存sql文件，然后选择结构和数据，选择保存的路径备份。
+
+  
+
+
+![pic_a664ca80.png](http://127.0.0.1:9999/images/pic_a664ca80.png)  
+
+
+  
+
+
+  
+
+
+4.有条件的可以用一下更厉害的备份方式，Navicat for MySQL数据传输，如果你有两天机器的话，先将要升级的数据库传输到另外一台机器，这种方式很保险，这里也提一下。
+
+  
+
+
+![pic_c1987428.png](http://127.0.0.1:9999/images/pic_c1987428.png)  
+
+
+  
+
+
+![pic_b47dc951.png](http://127.0.0.1:9999/images/pic_b47dc951.png)  
+
+
+  
+
+
+![pic_837301df.png](http://127.0.0.1:9999/images/pic_837301df.png)  
+
+
+  
+
+
+到这里我们的备份工作就完成了，我们一共使用了5个备份方式，如果这也满足不了数据库恢复，上天注定你要踩坑，小伙子你就自己慢慢踩坑吧。  
+
+
+1.mysql mysqldump 命令，
+
+2.mysql数据库文件备份，
+
+3.Navicat for MySQL备份功能，
+
+4.Navicat for MySQL导出数据库结构和数据，
+
+5.Navicat for MySQL数据传输。
+
+  
+
+
+接下来第二大步，老数据库卸载，新数据库安装
+
+  
+
+
+因为这篇帖子主要讲升级，卸载和安装我这专门有一篇帖子详细介绍
+
+https://blog.csdn.net/u010199866/article/details/80997485  
+
+
+数据库安装完成之后我们看一下版本，mysql -V，已经是mysql 5.7了
+
+![pic_53da45ea.png](http://127.0.0.1:9999/images/pic_53da45ea.png)  
+
+
+  
+
+
+  
+
+
+接下来第三大步，恢复数据 使用之前用mysqldump 命令备份的文件
+
+  
+
+
+mysql -uroot -p web < /root/mysql\_bak/web\_201807101652.sql  
+
+
+数据恢复完成，如果有问题继续尝试别的备份方式备份的文件进行恢复。
+
+  
+
+
+另外mysql5.1升级到5.7有个地方会报错
+
+我遇到原来的一些sql运行都报错，错误编码1055，错误信息和sql\_mode中的“only\_full\_group\_by“有关，到网上看了原因，说是mysql5.7中only\_full\_group\_by这个模式是默认开启的  
+解决办法大致有两种：  
+一：在sql查询语句中不需要group by的字段上使用any\_value()函数  
+当然，这种对于已经开发了不少功能的项目不太合适，毕竟要把原来的sql都给修改一遍
+
+二：修改my.cnf（windows下是my.ini）配置文件，删掉only\_full\_group\_by这一项  
+我们项目的mysql安装在ubuntu上面，找到这个文件打开一看，里面并没有sql\_mode这一配置项，想删都没得删。  
+
+
+当然，还有别的办法，打开mysql命令行，执行命令
+
+```java
+
+```
+
+ *  1
+
+这样就可以查出sql\_mode的值，复制这个值，在my.cnf中添加配置项（把查询到的值删掉only\_full\_group\_by这个选项，其他的都复制过去）：
+
+```java
+sql_mode=STRICT_TRANS_TABLES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+```
+
+ *  1
+
+如果 \[mysqld\] 这行被注释掉的话记得要打开注释。然后重重启mysql服务
+
+注：使用命令
+
+```java
+set sql_mode=STRICT_TRANS_TABLES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+```
+
+  
+
+
+![pic_92bdfba4.png](http://127.0.0.1:9999/images/pic_92bdfba4.png)
+
+到这里我们的升级就结束了，暂时没发现别的问题，谢谢观看，有问题请反馈。
+
+  
+
+
+  

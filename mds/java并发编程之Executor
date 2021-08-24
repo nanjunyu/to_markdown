@@ -1,0 +1,253 @@
+目录
+
+[Executor][]
+
+[为每一个请求启动一个新线程的Executor][Executor 1]
+
+[以同步的方式编写类似于单线程的行为][Link 1]
+
+[线程池 ][Link 2]
+
+[newFixedThreadPoole ][newFixedThreadPoole]
+
+[ newCachedThreadPoolo ][newCachedThreadPoolo]
+
+[newSingIeThreadExecutoro][]
+
+[ newScheduledThreadPoolo ][newScheduledThreadPoolo]
+
+线程生命周期的开销非常高，资源消耗高，稳定性不好。
+
+每当看到下面这种形式的代码时：
+
+```java
+new Thread (runnable).start()
+```
+
+并且你希望获得一种更加灵活的执行策略时，请考虑使用Executor来代替Thread。
+
+虽然Executor是个简单的接口，但它却为灵活且强大的异步任务执行框架提供了基础，该框架能够支持多种不同类型的任务执行策略。它提供了一种标准的方法将任务的提交过程与执行过程解耦开来，并用Runnable来表示任务。Executor的实现还提供了对生命周期的支持，以及统计信息收集、应用程序管理机制和性能监视等机制。
+
+# Executor 
+
+### 为每一个请求启动一个新线程的Executor 
+
+```java
+package com.example.demo;
+
+import java.util.concurrent.Executor;
+
+public class ThreadPerTaskExecutor implements Executor {
+    @Override
+    public void execute(Runnable command) {
+        new Thread(command).start();
+    }
+}
+```
+
+### 以同步的方式编写类似于单线程的行为 
+
+```java
+package com.example.demo;
+
+import java.util.concurrent.Executor;
+
+public class ThreadPerTaskExecutor implements Executor {
+   /* @Override
+    public void execute(Runnable command) {
+        new Thread(command).start();
+    }*/
+
+    @Override
+    public void execute(Runnable command) {
+        command.run();
+    }
+}
+```
+
+# 线程池 
+
+线程池，从字面含义来看，是指管理一组同构工作线程的资源池。线程池是与工作队列(Work Queue)密切相关的，其中在工作队列中保存了所有等待执行的任务。工作者线程乏Worker Thread的任务很简单:从工作队列中获取一个任务，执行任务，然后返回线程池并等待下一个任务。
+
+通过重用现有的线程而不是创建新线程，可以在处理多个请求时分摊在线程创建和销毁过程中产生的巨大开销。另一个额外的好处是，当请求到达时，工作线程通常已经存在，因此不会由于等待创建线程而延迟任务的执行，从而提高了响应性。通过适当调整线程池的大小，可以创建足够多的线程以便使处理器保持忙碌状态，同时还可以防止过多线程相互竞争资源而使应用程序耗尽内存或失败。
+
+###    newFixedThreadPoole 
+
+将创建一个固定长度的线程池，每当提交一个任务时就创建一个线程，直到达到线程池的最大数量，这时线程池的规模将不再变化(如果某个线程由于发生了未预期的Exception而结束，那么线程池会补充一个新的线程)。
+
+```java
+package com.example.demo;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
+public class ExecutorFixed {
+    private  static final int max=100;
+    private static final Executor exec= Executors.newFixedThreadPool(max);
+
+    public static void main(String[] args) throws IOException {
+        ServerSocket serverSocket=new ServerSocket(8080);
+        while(true){
+            final Socket con=serverSocket.accept();
+            Runnable task=new Runnable() {
+                @Override
+                public void run() {
+                    //接受请求后使用Socket进行通信，创建BufferedReader用于读取数据
+                    BufferedReader is = null;
+                    try {
+                        is = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                        String line = is.readLine();
+                        System.out.println("received frome client:" + line);
+                        //创建PrintWriter，用于发送数据
+                        PrintWriter pw = new PrintWriter(con.getOutputStream());
+                        pw.println("this data is from server");
+                        pw.flush();
+                        //关闭资源
+                        pw.close();
+                        serverSocket.close();
+                        con.close();
+                        try {
+                            is.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+
+                }
+            };
+            exec.execute(task);
+        }
+    }
+}
+```
+
+###    newCachedThreadPoolo 
+
+将创建一个可缓存的线程池，如果线程池的当前规模超过了处理需求时，那么将回收空闲的线程，而当需求增加时，则可以添加新的线程，线程池的规模不存在任何限制。
+
+```java
+package com.example.demo;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class CachedThreadPoolDemo {
+    private static ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
+
+    public static void main(String[] args) {
+
+        for (int i = 0; i < 10; i++) {
+            final int index = i;
+            try {
+                Thread.sleep(index * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            cachedThreadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    System.out.println(index);
+                }
+            });
+        }
+    }
+
+}
+```
+
+  
+
+
+### newSingIeThreadExecutoro 
+
+是一个单线程的Executor，它创建单个工作者线程来执行任务，如果这个线程异常结束，会创建另一个线程来替代。newSingleThreadExecutor能确保依照任务在队列中的顺序来串行执行(例如FIFO, LIFO、优先级)。
+
+```java
+package com.example.demo;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class newSingleThreadExecutor {
+    private  static ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+    public static void main(String[] args) {
+
+        for (int i = 0; i < 10; i++) {
+            final int index = i;
+            singleThreadExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        System.out.println(index);
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+    }
+}
+```
+
+###    newScheduledThreadPoolo 
+
+创建了一个固定长度的线程池，而且以延迟或定时的方式来执行任务，类似于Timer。
+
+```java
+package com.example.demo;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+public class newScheduledThreadPool {
+    private static ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(5);
+
+    public static void main(String[] args) {
+     /*   scheduledExecutorService.schedule(new Runnable() {
+
+            @Override
+            public void run() {
+                System.out.println("delay 3 seconds");
+            }
+        }, 3, TimeUnit.SECONDS);*/
+
+
+
+        scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+
+            @Override
+            public void run() {
+                System.out.println("delay 1 seconds, and excute every 3 seconds");
+            }
+        }, 1, 3, TimeUnit.SECONDS);
+    }
+}
+```
+
+  
+  
+从为每个任务分配一个线程”策略变成基于线程池的策略，将对应用程序的稳定性产生重大的影响，Web服务器不会再在高负载情况下失败。。由于服务器不会创建数千个线程来争夺有限的CPU和内存资源，因此服务器的性能将平缓地降低。通过使用Executor，可以实现各种调优、管理、监视、记录日志、错误报告和其他功能，如果不使用任务执行框架，那么要增加这些功能是非常困难的。
+
+未完待续。。。。未完待续。。。。。
+
+
+[Executor]: #Executor
+[Executor 1]: #%E4%B8%BA%E6%AF%8F%E4%B8%80%E4%B8%AA%E8%AF%B7%E6%B1%82%E5%90%AF%E5%8A%A8%E4%B8%80%E4%B8%AA%E6%96%B0%E7%BA%BF%E7%A8%8B%E7%9A%84Executor
+[Link 1]: #%E4%BB%A5%E5%90%8C%E6%AD%A5%E7%9A%84%E6%96%B9%E5%BC%8F%E7%BC%96%E5%86%99%E7%B1%BB%E4%BC%BC%E4%BA%8E%E5%8D%95%E7%BA%BF%E7%A8%8B%E7%9A%84%E8%A1%8C%E4%B8%BA
+[Link 2]: #%E7%BA%BF%E7%A8%8B%E6%B1%A0%C2%A0%20%C2%A0
+[newFixedThreadPoole]: #newFixedThreadPoole%C2%A0
+[newCachedThreadPoolo]: #%C2%A0%20%C2%A0%20newCachedThreadPoolo%C2%A0
+[newSingIeThreadExecutoro]: #newSingIeThreadExecutoro
+[newScheduledThreadPoolo]: #%C2%A0%20%C2%A0%20newScheduledThreadPoolo%C2%A0

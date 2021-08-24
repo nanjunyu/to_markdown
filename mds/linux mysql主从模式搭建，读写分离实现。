@@ -1,0 +1,350 @@
+想拥有qps高的服务器怎么做，想淘宝那样的大型企业级电商，在双十一每秒几百万请求下也都稳如泰山，当然淘宝用到了很多顶尖技术解决高并发让服务器高可用，你可能会想到使用好的技术架构，页面缓存，非关系型是数据库，分布式 负载均衡等。但这些是远远不够的，因为往往导致qps提不上去的根本瓶颈就在mysql数据库，所以搭建mysql主从进行读写分离等很有必要，废话不多说现在开始搭建配置。
+
+最近准备学习下mysql的主从，读写分离 pxc集群这一块，刚好在这里做好学习过程，省得以后搭建的时候各种百度，也希望可以帮到正在研究这一块的人。
+
+# 实现目标 
+
+## 搭建两台MySQL服务器，一台作为主服务器，一台作为从服务器，主服务器进行写操作，从服务器进行读操作。 
+
+![pic_51b64386.png](http://127.0.0.1:9999/images/pic_51b64386.png)
+
+接下来进入我们的正题了，主从配置。
+
+1、配置Master主服务器
+
+（1）在Master MySQL上创建一个用户‘repl’，并允许其他Slave服务器可以通过远程访问Master，通过该用户读取二进制日志，实现数据同步。
+
+![pic_cd9ee4ab.png](http://127.0.0.1:9999/images/pic_cd9ee4ab.png)
+
+```java
+1 mysql>create user repl; //创建新用户
+2 //repl用户必须具有REPLICATION SLAVE权限，除此之外没有必要添加不必要的权限，密码为mysql。说明一下192.168.0.%，这个配置是指明repl用户所在服务器，这里%是通配符，表示192.168.0.0-192.168.0.255的Server都可以以repl用户登陆主服务器。当然你也可以指定固定Ip。
+3:mysql> GRANT REPLICATION SLAVE ON *.* TO 'repl'@'10.137.35.1.%';
+```
+
+（2）找到MySQL安装文件夹修改my.Ini文件 vi /etc/my.cnf
+
+  
+server-id=1  
+log-bin=master-bin
+
+log-bin-index=master-bin.index
+
+![pic_eab4ba45.png](http://127.0.0.1:9999/images/pic_eab4ba45.png)
+
+查看主数据库状态 SHOW MASTER STATUS;
+
+![pic_0a947db7.png](http://127.0.0.1:9999/images/pic_0a947db7.png)
+
+这里说明主数据库master配置好了，记录下这里的master-bin 和position 后面配置从数据库需要用到。
+
+重启mysql service mysqld restart
+
+  
+1、配置Slave从服务器
+
+change master to master\_host='10.137.X.X', //Master 服务器Ip  
+master\_port=3306,  
+master\_user='repl',  
+master\_password='123',  
+master\_log\_file='master-bin.000001',//Master服务器产生的日志  
+master\_log\_pos=549;
+
+（3）启动Slave
+
+start slave;
+
+配置从服务器 my.cnf vi /etc/my.cnf
+
+server-id=2  
+relay-log-index=slave-relay-bin.index
+
+relay-log=slave-relay-bin
+
+重启mysql service mysqld restart
+
+OK所有配置都完成了，数据库也安装了 主从也配置了
+
+这时候大家可以在Master Mysql 中进行测试了，因为我们监视的时Master mysql 所有操作日志，所以，你的任何改变主服务器数据库的操作，都会同步到从服务器上。创建个数据库，表试试吧。。。
+
+CREATE TABLE \`test\_s\` (  
+\`id\` int(11) NOT NULL,  
+PRIMARY KEY (\`id\`)  
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;  
+
+
+![pic_2717ff51.png](http://127.0.0.1:9999/images/pic_2717ff51.png)
+
+下面就是见证奇迹的时刻！！！
+
+![pic_a199b217.png](http://127.0.0.1:9999/images/pic_a199b217.png)
+
+  
+
+
+可以看到 我们在主数据库master创建了一张表user\_s，在从数据库Slave自动创建了对应的一摸一样的表，主从搭建大功告成，下面我们开始结合java实现读写分离。
+
+搭建springMvc框架，这里就不做搭建springMvc的讲解了，提几个需要改动的地方
+
+1.jdbc新增salve配置
+
+```java
+driverClasss=com.mysql.jdbc.Driver
+#定义初始连接数
+initialSize=0
+#定义最大连接数
+maxActive=20
+#定义最大空闲
+maxIdle=20
+#定义最小空闲
+minIdle=1
+#定义最长等待时间
+maxWait=60000
+
+
+
+#master 一 库
+master.jdbcUrl=jdbc:mysql://10.137.x.x:3306/test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true
+master.username=root
+master.password=123
+
+#slave 一 库
+slave.one.jdbc.url=jdbc:mysql://10.137.x.x:3306/test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true
+slave.one.jdbc.user=root
+slave.one.jdbc.password=123
+#slave 二 库
+```
+
+2.再添加一个spring-mybatis.xml文件spring-mybatis-slave.xml
+
+```java
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                        http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+                       ">
+
+    <!-- 配置数据源 -->
+    <bean id="dataSourceSlaveOne" class="org.apache.commons.dbcp.BasicDataSource"
+          destroy-method="close">
+        <property name="driverClassName" value="${driverClasss}"/>
+        <property name="url" value="${slave.one.jdbc.url}"/>
+        <property name="username" value="${slave.one.jdbc.user}"/>
+        <property name="password" value="${slave.one.jdbc.password}"/>
+        <!-- 初始化连接大小 -->
+        <property name="initialSize" value="${initialSize}"></property>
+        <!-- 连接池最大数量 -->
+        <property name="maxActive" value="${maxActive}"></property>
+        <!-- 连接池最大空闲 -->
+        <property name="maxIdle" value="${maxIdle}"></property>
+        <!-- 连接池最小空闲 -->
+        <property name="minIdle" value="${minIdle}"></property>
+        <!-- 获取连接最大等待时间 -->
+        <property name="maxWait" value="${maxWait}"></property>
+    </bean>
+
+
+</beans>
+```
+
+1.spring-context.xml需要修改
+
+```java
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+      http://www.springframework.org/schema/context
+      http://www.springframework.org/schema/context/spring-context-3.0.xsd
+      http://www.springframework.org/schema/mvc
+      http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+      http://www.springframework.org/schema/tx
+      http://www.springframework.org/schema/tx/spring-tx.xsd
+">
+
+
+    <!-- 激活@Controller模式 -->
+    <mvc:annotation-driven/>
+
+    <!-- 自动扫描 -->
+    <context:component-scan base-package="com.ssm.order"/>
+
+    <!-- 读入配置属性文件 -->
+    <context:property-placeholder
+            location="classpath:properties/jdbc.properties,classpath:properties/redis.properties"/>
+
+
+    <!--spring的路由来管理数据源-->
+    <bean id="dynamicDataSource" class="com.ssm.order.utils.DynamicDataSource">
+        <property name="targetDataSources">
+            <map>
+                <entry value-ref="dataSourceMaster" key="db_master"/>
+                <entry value-ref="dataSourceSlaveOne" key="db_slave_one"/>
+            </map>
+        </property>
+    </bean>
+
+
+    <!--spring-mybatis整合-->
+    <bean id="dynamicsqlSessionFactory"
+          class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dynamicDataSource"/>
+        <property name="mapperLocations" value="classpath:mapping/*.xml"></property>
+    </bean>
+
+
+    <!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.ssm.order.dao"/>
+        <property name="sqlSessionFactoryBeanName" value="dynamicsqlSessionFactory"></property>
+    </bean>
+
+    <!-- (事务管理)transaction manager, use JtaTransactionManager for global tx -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dynamicDataSource"/>
+    </bean>
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+
+    <!-- 导入spring-mybatis文件 包括连接池、事务、mapper映射器-->
+    <import resource="classpath:/spring-mybatis.xml"/>
+    <import resource="classpath:/spring-mybatis-slave.xml"/>
+
+    <!-- 导入spring-redis文件 包括连接池配置-->
+    <import resource="classpath:/spring-redis.xml"/>
+
+</beans>
+```
+
+下面是需要新增的java类，说白了就是
+
+　借助Spring的 AbstractRoutingDataSource 这个抽象实现。我们要实现 determineCurrentLookupKey()这个方法来动态的选择使用哪个数据源操着数据库
+
+```java
+package com.ssm.order.utils;
+
+/**
+ * @Author: nanjunyu
+ * @Description:
+ * @Date: Create in  2018/7/10 14:51
+ */
+public class DBContextHolder {
+    private static ThreadLocal<String> contextHolder = new ThreadLocal<String>();
+
+    public static String getDBType() {
+        String db = contextHolder.get();
+        if(db == null) {
+            db = DBType.DB_TYPE_MASTER; //默认是master库
+        }
+
+        return db;
+    }
+
+    public static void setDBType(String dbType) {
+        contextHolder.set(dbType);
+    }
+
+    public static void clearDBType() {
+        contextHolder.remove();
+    }
+
+}
+```
+
+```java
+ 
+```
+
+```java
+package com.ssm.order.utils;
+
+/**
+ * @Author: nanjunyu
+ * @Description:
+ * @Date: Create in  2018/7/10 14:51
+ */
+public class DBType {
+    public final static String DB_TYPE_MASTER = "db_master";
+
+    public final static String DB_TYPE_SLAVE_ONE = "db_slave_one";
+
+}
+```
+
+```java
+package com.ssm.order.utils;
+
+import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+
+/**
+ * @Author: nanjunyu
+ * @Description:
+ * @Date: Create in  2018/7/10 14:51
+ */
+public class DynamicDataSource extends AbstractRoutingDataSource {
+    @Override
+    protected Object determineCurrentLookupKey() {
+        return DBContextHolder.getDBType();
+    }
+}
+```
+
+接下来我们开始测试了，在service层方法中自主选择好数据库
+
+```java
+package com.ssm.order.service.impl;
+
+import com.ssm.order.dao.UserDao;
+import com.ssm.order.model.User;
+import com.ssm.order.service.UserService;
+import com.ssm.order.utils.DBContextHolder;
+import com.ssm.order.utils.DBType;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.annotation.Resource;
+import java.util.List;
+
+/**
+ * Created by nanJunYu on 2016/7/15.
+ */
+
+@Service
+public class UserServiceImpl implements UserService {
+    
+    @Resource
+    private UserDao userDao;
+    
+    public List<User> getAllUser() {
+        DBContextHolder.setDBType(DBType.DB_TYPE_MASTER);
+        return userDao.selectAllUser();
+    }
+
+    @Override
+    public void insert(User user) {
+        //设置数据库
+        DBContextHolder.setDBType(DBType.DB_TYPE_MASTER);
+        userDao.insert(user);
+    }
+
+}
+```
+
+![pic_c98eb434.png](http://127.0.0.1:9999/images/pic_c98eb434.png)
+
+下面停掉次数据库，然后代码里查次库。
+
+![pic_78c6d24d.png](http://127.0.0.1:9999/images/pic_78c6d24d.png)
+
+![pic_41d7ed45.png](http://127.0.0.1:9999/images/pic_41d7ed45.png)
+
+测试方法。。我测试的时候写了个controller查询主库，没问题，查询次库也没问题，于是我把次库mysql停掉了，继续查询主库没问题，查询次库代码报错连接超时，说明我们的读写分离是成功的，这里是手动指定每个方法需要操作的数据库，我们可以定义aop切面，反射拿到执行方法的名称，大致就是方法名包含query，get，find，等选择次库，包含set，insert，create，等选择主库，有兴趣的可以试试。
+
+附上项目代码
+
+https://git.coding.net/nanjy/order-ssm.git

@@ -1,0 +1,293 @@
+目录
+
+[1.0 ●创建型模式(Creational Pattern)][1.0 _Creational Pattern]
+
+[2.0 ●简单工厂模式][2.0]
+
+[2.0.1 ●简单工厂模式的定义][2.0.1]
+
+[2.0.2 ●简单工厂模式的结构][2.0.2]
+
+[2.0.3 ●实例说明][2.0.3]
+
+[2.0.4 ●实例代码][2.0.4]
+
+[3.0 ●模式优点][3.0]
+
+[4.0 ●模式缺点][4.0]
+
+[5.0 ●模式适用环境][5.0]
+
+# 1.0 ●创建型模式(Creational Pattern) 
+
+●创建型模式(Creational Pattern)关注对象的创建过程
+
+●创建型模式对类的实例化过程进行了抽象，能够将软件模块中对象的创建和对象的使用分离，对用户隐藏了类的实例的创建细节
+
+●创建型模式描述如何将对象的创建和使用分离，让用户在使用对象时无须关心对象的创建细节，从而降低系统的耦合度，让设计方案更易于修改和扩展
+
+<table> 
+ <tbody> 
+  <tr> 
+   <td> <p><span><strong>模式名称</strong></span></p> </td> 
+   <td> <p><span><strong>定</strong></span>&nbsp; <span><strong>义</strong></span></p> </td> 
+   <td> <p><span><strong>学习难度</strong></span></p> </td> 
+   <td> <p><span><strong>使用频率</strong></span></p> </td> 
+  </tr> 
+  <tr> 
+   <td> <p><span><strong>简单工厂模式</strong></span></p> <p><span><strong>(Simple Factory Pattern)</strong></span></p> </td> 
+   <td> <p><span><strong>定义一个工厂类，它可以根据参数的不同返回不同类的实例，被创建的实例通常都具有共同的父类。</strong></span></p> </td> 
+   <td> <p><span>★★☆☆☆</span></p> </td> 
+   <td> <p><span>★★★☆☆</span></p> </td> 
+  </tr> 
+  <tr> 
+   <td> <p><span><strong>工厂方法模式</strong></span></p> <p><span><strong>(Factory Method Pattern)</strong></span></p> </td> 
+   <td> <p><span><strong>定义一个用于创建对象的接口，但是让子类决定将哪一个类实例化。工厂方法模式让一个类的实例化延迟到其子类。</strong></span></p> </td> 
+   <td> <p><span>★★☆☆☆</span></p> </td> 
+   <td> <p><span>★★★★★</span></p> </td> 
+  </tr> 
+  <tr> 
+   <td> <p><span><strong>抽象工厂模式</strong></span></p> <p><span><strong>(Abstract Factory Pattern)</strong></span></p> </td> 
+   <td> <p><span><strong>提供一个创建一系列相关或相互依赖对象的接口，而无须指定它们具体的类。</strong></span></p> </td> 
+   <td> <p><span>★★★★☆</span></p> </td> 
+   <td> <p><span>★★★★★</span></p> </td> 
+  </tr> 
+ </tbody> 
+</table>
+
+![pic_b1c35ad3.png](http://127.0.0.1:9999/images/pic_b1c35ad3.png)
+
+# 2.0 ●简单工厂模式 
+
+简单工厂模式的定义简单工厂模式 (Simple Factory Pattern)：定义一个工厂类，它可以根据参数的不同返回不同类的实例，被创建的实例通常都具有共同的父类。
+
+## 2.0.1 ●简单工厂模式的定义 
+
+✓在简单工厂模式中用于创建实例的方法通常是静态(static)方法，因此又被称为静态工厂方法(Static Factory Method)模式
+
+✓要点：如果需要什么，只需要传入一个正确的参数，就可以获取所需要的对象，而无须知道其创建细节
+
+✓Parameterized Factory Methods
+
+●简单工厂模式的结构
+
+![pic_8fadc581.png](http://127.0.0.1:9999/images/pic_8fadc581.png)
+
+## 2.0.2 ●简单工厂模式的结构 
+
+✓简单工厂模式包含以下3个角色：
+
+•Factory（工厂角色）
+
+•Product（抽象产品角色）
+
+•ConcreteProduct（具体产品角色）
+
+## 2.0.3 ●实例说明 
+
+某软件公司要基于Java语言开发一套图表库，该图表库可以为应用系统提供多种不同外观的图表，例如柱状图(HistogramChart)、饼状图(PieChart)、折线图(LineChart)等。该软件公司图表库设计人员希望为应用系统开发人员提供一套灵活易用的图表库，通过设置不同的参数即可得到不同类型的图表，而且可以较为方便地对图表库进行扩展，以便能够在将来增加一些新类型的图表。
+
+现使用简单工厂模式来设计该图表库。
+
+![pic_ec6bbf79.png](http://127.0.0.1:9999/images/pic_ec6bbf79.png)
+
+## 2.0.4 ●实例代码 
+
+✓(1) Chart：抽象图表接口，充当抽象产品类
+
+✓(2) HistogramChart：柱状图类，充当具体产品类
+
+✓(3) PieChart：饼状图类，充当具体产品类
+
+✓(4) LineChart：折线图类，充当具体产品类
+
+✓(5) ChartFactory：图表工厂类，充当工厂类
+
+✓(6) Client：客户端测试类
+
+```java
+package designpatterns.simpleFactory;
+
+/**
+ * @Author: Frank
+ * @Description:"画图抽象类"
+ * @Date: Create in  2018/10/9 2:53 PM
+ */
+public interface Chart {
+    public void display();
+}
+```
+
+```java
+package designpatterns.simpleFactory;
+
+/**
+ * @Author: Frank
+ * @Description:
+ * @Date: Create in  2018/10/9 2:53 PM
+ */
+public class LineChart implements Chart {
+    public LineChart() {
+        System.out.println("创建折线图！");
+    }
+
+    @Override
+    public void display() {
+        System.out.println("显示折线图！");
+    }
+}
+```
+
+```java
+package designpatterns.simpleFactory;
+
+/**
+ * @Author: Frank
+ * @Description:
+ * @Date: Create in  2018/10/9 2:52 PM
+ */
+public class HistogramChart implements Chart {
+    public HistogramChart() {
+        System.out.println("创建柱状图！");
+    }
+
+    @Override
+    public void display() {
+        System.out.println("显示柱状图！");
+    }
+}
+```
+
+```java
+package designpatterns.simpleFactory;
+
+/**
+ * @Author: Frank
+ * @Description:
+ * @Date: Create in  2018/10/9 2:52 PM
+ */
+public class PieChart implements Chart {
+
+    public PieChart() {
+        System.out.println("创建饼状图！");
+    }
+
+    @Override
+    public void display() {
+        System.out.println("显示饼状图！");
+    }
+}
+```
+
+```java
+package designpatterns.simpleFactory;
+
+/**
+ * @Author: Frank
+ * @Description:图表工厂类
+ * @Date: Create in  2018/10/9 2:53 PM
+ */
+public class ChartFactory {
+    public static Chart getChart(String type) {
+        Chart chart = null;
+        if ("histogram".equalsIgnoreCase(type)) {
+            chart = new HistogramChart();
+            System.out.println("初始化设置柱状图！");
+        } else if ("line".equalsIgnoreCase(type)) {
+            chart = new LineChart();
+            System.out.println("初始化设置折线图！");
+
+        } else if ("pie".equalsIgnoreCase(type)) {
+            chart = new PieChart();
+            System.out.println("初始化设置饼状图！");
+
+        }
+        return chart;
+    }
+
+}
+```
+
+```java
+package designpatterns.simpleFactory;
+
+/**
+ * @Author: Frank
+ * @Description:
+ * @Date: Create in  2018/10/9 2:51 PM
+ */
+public class Client {
+    public static void main(String[] args) {
+        Chart chart = ChartFactory.getChart("pie");
+        chart.display();
+        Chart chartA = ChartFactory.getChart("line");
+        chartA.display();
+        Chart chartB = ChartFactory.getChart("histogram");
+        chartB.display();
+    }
+
+}
+```
+
+![pic_a61a2654.png](http://127.0.0.1:9999/images/pic_a61a2654.png)
+
+不难发现，在上述客户端代码中不包含任何与具体图标对象相关的信息，如果需要更换具体图表对象，只需要需要客户端代码，无需修改任何源代码，符合开闭原则。
+
+将对象的创建与使用分离的其他好处
+
+✓防止用来实例化一个类的数据和代码在多个类中到处都是，可以将有关创建的知识搬移到一个工厂类中，解决代码重复、创建蔓延的问题 \[Move Creation Knowledge to Factory. Joshua Kerievsky, Refactoring to Patterns, 2004\]
+
+✓构造函数的名字都与类名相同，从构造函数和参数列表中大家很难了解不同构造函数所构造的产品的差异 à 将对象的创建过程封装在工厂类中，可以提供一系列名字完全不同的工厂方法，每一个工厂方法对应一个构造函数，客户端可以以一种更加可读、易懂的方式来创建对象
+
+# 3.0 ●模式优点 
+
+✓实现了对象创建和使用的分离
+
+✓客户端无须知道所创建的具体产品类的类名，只需要知道具体产品类所对应的参数即可
+
+✓通过引入配置文件，可以在不修改任何客户端代码的情况下更换和增加新的具体产品类，在一定程度上提高了系统的灵活性
+
+#  
+
+# 4.0 ●模式缺点 
+
+✓工厂类集中了所有产品的创建逻辑，职责过重，一旦不能正常工作，整个系统都要受到影响
+
+✓增加系统中类的个数（引入了新的工厂类），增加了系统的复杂度和理解难度
+
+✓系统扩展困难，一旦添加新产品不得不修改工厂逻辑
+
+✓由于使用了静态工厂方法，造成工厂角色无法形成基于继承的等级结构，工厂类不能得到很好地扩展
+
+# 5.0 ●模式适用环境 
+
+✓工厂类负责创建的对象比较少，由于创建的对象较少，不会造成工厂方法中的业务逻辑太过复杂
+
+✓客户端只知道传入工厂类的参数，对于如何创建对象并不关心
+
+附上所有设计模式相关代码
+
+ https://gitee.com/nanjunyu/designPatterns-study.git
+
+### 原创公众号 
+
+###  关注java 设计模式，JVM特性， 
+
+###  并发编程、分布式、微服务， 
+
+###  inux高可用集群，等相关技术。 
+
+###  扫一扫关注我吧！  
+
+![pic_542ec691.png](http://127.0.0.1:9999/images/pic_542ec691.png)
+
+
+[1.0 _Creational Pattern]: #1.0%20%E2%97%8F%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F%28Creational%20Pattern%29
+[2.0]: #2.0%20%E2%97%8F%E7%AE%80%E5%8D%95%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F
+[2.0.1]: #2.0.1%C2%A0%E2%97%8F%E7%AE%80%E5%8D%95%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F%E7%9A%84%E5%AE%9A%E4%B9%89
+[2.0.2]: #2.0.2%E7%AE%80%E5%8D%95%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F%E7%9A%84%E7%BB%93%E6%9E%84
+[2.0.3]: #2.0.3%20%E2%97%8F%E5%AE%9E%E4%BE%8B%E8%AF%B4%E6%98%8E
+[2.0.4]: #2.0.3%20%E2%97%8F%E5%AE%9E%E4%BE%8B%E4%BB%A3%E7%A0%81
+[3.0]: #3.0%20%E2%97%8F%E6%A8%A1%E5%BC%8F%E4%BC%98%E7%82%B9
+[4.0]: #4.0%C2%A0%E2%97%8F%E6%A8%A1%E5%BC%8F%E7%BC%BA%E7%82%B9
+[5.0]: #5.0%20%E2%97%8F%E6%A8%A1%E5%BC%8F%E9%80%82%E7%94%A8%E7%8E%AF%E5%A2%83

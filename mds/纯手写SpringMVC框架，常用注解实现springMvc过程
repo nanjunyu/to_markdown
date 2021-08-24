@@ -1,0 +1,492 @@
+当你迷茫不知道学什么技术的时候，你是否想到将时间花在研究分析经典的开源框架上，springMvc这么经典的成熟框架里面用到了大量的设计模式，优雅的代码很值得你深入去学习，学习大师的编码思想和设计模式，学习源码是提高自己代码编写的最佳方式。
+
+废话不多说，我们现在开始手写一个做java开发人人皆知的springMvc框架。
+
+博客原代码地址:
+
+[https://gitee.com/nanjunyu/ssm-example.git][https_gitee.com_nanjunyu_ssm-example.git]
+
+### 具体的业务执行步骤如下: 
+
+### ⑴ 用户发送请求至前端控制器DispatcherServlet  
+
+### ⑵ DispatcherServlet收到请求调用HandlerMapping处理器映射器。  
+
+### ⑶ 处理器映射器根据请求url找到具体的处理器，生成处理器对象及处理器拦截器(如果有则生成)一并返回给DispatcherServlet。  
+
+### ⑷ DispatcherServlet通过HandlerAdapter处理器适配器调用处理器  
+
+### ⑸ 执行处理器(Controller，也叫后端控制器)。 
+
+### ⑹ Controller执行完成返回ModelAndView 
+
+### ⑺ HandlerAdapter将controller执行结果ModelAndView返回给DispatcherServlet  
+
+### ⑻ DispatcherServlet将ModelAndView传给ViewReslover视图解析器 
+
+### ⑼ ViewReslover解析后返回具体View  
+
+### ⑽ DispatcherServlet对View进行渲染视图（即将模型数据填充至视图中）。 
+
+### ⑾ DispatcherServlet响应用户。 
+
+###  
+
+所以我们知道了springMvc最底层的DispatcherServlet 其实就是个servlet，在这个servlet里用反射，对不同的注解，进行了大量的装载操作，进行了大量的ioc依赖处理，建立了一些映射关系。
+
+ok 我们知道了庐山真面目，所有发现实现几个简单的注解其实没啥难度，现在我们开始码代码。
+
+首先我们新建一个普通的maven项目，如下是我的代码结构。
+
+![pic_2260df18.png](http://127.0.0.1:9999/images/pic_2260df18.png)
+
+### 1.pom文件添加servlet依赖，这个必须用到的。 
+
+```java
+<dependencies>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+            <version>2.5</version>
+        </dependency>
+    </dependencies>
+```
+
+### 2.我们建好4个springMvc常见注解 
+
+ @Autowired 
+
+```java
+package com.ssm.example.annotation;
+
+import java.lang.annotation.*;
+
+/**
+ * @Author: nanJunYu
+ * @Description:自动装配
+ * @Date: Create in  2018/8/13 11:08
+ */
+@Target({ElementType.CONSTRUCTOR, ElementType.FIELD, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface Autowired {
+    String value() default "";
+}
+```
+
+ @Controller
+
+```java
+package com.ssm.example.annotation;
+
+import java.lang.annotation.*;
+
+/**
+ * @Author: nanJunYu
+ * @Description: 标示为控制层
+ * @Date: Create in  2018/8/13 11:06
+ */
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface Controller {
+}
+```
+
+@RequestMapping
+
+```java
+package com.ssm.example.annotation;
+
+import java.lang.annotation.*;
+
+/**
+ * @Author: nanJunYu
+ * @Description:访问记录映射 作用范围内和方法
+ * @Date: Create in  2018/8/13 11:08
+ */
+@Target({ElementType.METHOD, ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface RequestMapping {
+    String value() default "";
+
+}
+```
+
+@Service
+
+```java
+package com.ssm.example.annotation;
+
+import java.lang.annotation.*;
+
+/**
+ * @Author: nanJunYu
+ * @Description: 启动时将自动注册到容器
+ * @Date: Create in  2018/8/13 14:33
+ */
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface Service {
+    String value() default "";
+}
+```
+
+### 3.我们建好测试测试接口和实现类 
+
+```java
+package com.ssm.example.service;
+
+/**
+ * @Author: nanJunYu
+ * @Description:
+ * @Date: Create in  2018/8/13 14:39
+ */
+public interface FrankService {
+    String query(String name,String job);
+}
+```
+
+```java
+package com.ssm.example.service.impl;
+
+import com.ssm.example.annotation.Service;
+import com.ssm.example.service.FrankService;
+
+/**
+ * @Author: nanJunYu
+ * @Description:
+ * @Date: Create in  2018/8/13 14:40
+ */
+@Service(value = "FrankServiceImpl")
+public class FrankServiceImpl implements FrankService {
+    public String query(String name, String job) {
+        return "name:=" + name + "    job:=" + job;
+    }
+}
+```
+
+### 4.我们建好测试的controller 
+
+```java
+package com.ssm.example.controller;
+
+import com.ssm.example.annotation.Autowired;
+import com.ssm.example.annotation.Controller;
+import com.ssm.example.annotation.RequestMapping;
+import com.ssm.example.service.FrankService;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+/**
+ * @Author: nanJunYu
+ * @Description: ssm Controller 控制层
+ * @Date: Create in  2018/8/13 14:38
+ */
+@Controller
+@RequestMapping(value = "/ssm")
+public class FrankController {
+
+    @Autowired("FrankServiceImpl")
+    FrankService frankService;
+
+    @RequestMapping(value = "/test")
+    public void queryParam(HttpServletResponse response) {
+        try {
+            PrintWriter printWriter = response.getWriter();
+            String result = frankService.query("Frank", "java");
+            printWriter.write(result);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### 5.我们建好最核心的类DispatcherServlet 
+
+ 这里提一下整体思路
+
+```java
+/** 第一步:把所有的bean扫描出来  扫描所有的class文件
+ *  第二步:根据集合里的class类创建对象
+ *  第三步:根据bean进行关系依赖处理
+ *  第四步:建立完整映射关系
+ *  第五步:根据客户端请求，在doPost方法里获取到客户端请求的路径，然后在我们装载好的容器中进行获取对应实例对象。
+ */
+```
+
+```java
+package com.ssm.example.servlet;
+
+import com.ssm.example.annotation.Autowired;
+import com.ssm.example.annotation.Controller;
+import com.ssm.example.annotation.RequestMapping;
+import com.ssm.example.annotation.Service;
+import com.ssm.example.controller.FrankController;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @Author: nanJunYu
+ * @Description: 所有的bean使用之前得先被创建，放到mapping里面，
+ * 所以启动的时候就应该创建，在init方法里做处理
+ * <p>
+ * 将所有的依赖关系进行扫描建立好
+ * @Date: Create in  2018/8/13 11:11
+ */
+public class DispatcherServlet extends HttpServlet {
+
+    List<String> classNames = new ArrayList();
+
+    Map<String, Object> beans = new HashMap<>();
+    Map<String, Object> handlerMap = new HashMap<>();
+
+    private static final long serialVersionUID = 1L;
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        this.doPost(req, resp);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //获取请求路径
+        String url = req.getRequestURI();
+        String context = req.getContextPath();
+        String path = url.replace(context, "");
+        Method method= (Method) handlerMap.get(path);
+        //根据key去拿实例
+        FrankController frankController= (FrankController) beans.get("/"+path.split("/")[1]);
+        try {
+            method.invoke(frankController, new Object[] { req, resp});
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void init() throws ServletException {
+        /** 第一步:把所有的bean扫描出来  扫描所有的class文件
+         *  第二步:根据集合里的class类创建对象
+         *  第三步:根据bean进行关系依赖处理
+         *  第四步:建立完整映射关系
+         */
+        scanPackage("com.ssm");
+        doInstance();
+        doIoc();
+        buildUrlMapping();
+    }
+
+    /**
+     * @Author: nanJunYu
+     * @Description:把所有的bean扫描出来 扫描所有的class文件
+     * @Date: Create in  2018/8/13 15:10
+     * @params: basePackage:项目的包根路径
+     * @return:
+     */
+    private void scanPackage(String basePackage) {
+        //拿到项目的路径开始扫描所有的class
+        URL url = this.getClass().getClassLoader().getResource("/" + basePackage.replaceAll("\\.", "/"));
+        String fileStr = url.getFile();
+        File file = new File(fileStr);
+        String fileArray[] = file.list();
+        for (String path : fileArray) {
+            File filePath = new File(fileStr + path);
+            //代表是文件夹 继续递归
+            if (filePath.isDirectory()) {
+                scanPackage(basePackage + "." + path);
+            } else {
+                //代表是class文件目录 将完整的class物理文件路径地址 放入到集合里
+                classNames.add(basePackage + "." + filePath.getName());
+            }
+
+        }
+    }
+
+    /**
+     * @Author: nanJunYu
+     * @Description:根据集合里的class类创建实例化对象
+     * @Date: Create in  2018/8/13 15:34
+     * @params:
+     * @return:
+     */
+    private void doInstance() {
+        if (classNames.isEmpty()) {
+            System.out.println("class扫描失败.......");
+        }
+        for (String className : classNames) {
+            //去除多余的后缀名
+            String cName = className.replace(".class", "");
+            try {
+                Class<?> clazz = Class.forName(cName);
+                if (clazz.isAnnotationPresent(Controller.class)) {
+                    //如果是控制类 反射创建控制类
+                    Object instance = clazz.newInstance();
+                    RequestMapping requestMapping = clazz.getAnnotation(RequestMapping.class);
+                    String value = requestMapping.value();
+                    //获取到@RequestMapping上配置的地址 当key放到map容器里  将实例以value的形式存放
+                    beans.put(value, instance);
+                } else if (clazz.isAnnotationPresent(Service.class)) {
+                    Service service = clazz.getAnnotation(Service.class);
+                    Object instance = clazz.newInstance();
+                    //获取到@Service上配置的地址 当key放到map容器里  将实例以value的形式存放
+                    beans.put(service.value(), instance);
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * @Author: nanJunYu
+     * @Description:把Service注入到控制层
+     * @Date: Create in  2018/8/13 15:53
+     * @params:
+     * @return:
+     */
+    private void doIoc() {
+        if (beans.entrySet().size() <= 0) {
+            System.out.println("没有一个实例类");
+        }
+        for (Map.Entry<String, Object> entry : beans.entrySet()) {
+            Object instance = entry.getValue();
+            Class<?> clazz = instance.getClass();
+            if (clazz.isAnnotationPresent(Controller.class)) {
+                //获得所有声明的参数 得到参数数组
+                Field[] fields = clazz.getDeclaredFields();
+                for (Field field : fields) {
+                    if (field.isAnnotationPresent(Autowired.class)) {
+                        Autowired autowired = field.getAnnotation(Autowired.class);
+                        String key = autowired.value();
+                        //打开私有属性的权限修改
+                        field.setAccessible(true);
+                        try {
+                            //给变量重新设值
+                            field.set(instance, beans.get(key));
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        continue;
+                    }
+                }
+            } else {
+                continue;
+            }
+        }
+    }
+
+    /**
+     * @Author: nanJunYu
+     * @Description:根据扫描到的类上的RequestMapping注解和方法上的RequestMapping建立完整映射关系。
+     * @Date: Create in  2018/8/13 15:53
+     * @params:
+     * @return:
+     */
+    private void buildUrlMapping() {
+        if (beans.entrySet().size() <= 0) {
+            System.out.println("没有类的实例化......");
+            return;
+        }
+        for (Map.Entry<String, Object> entry : beans.entrySet()) {
+            Object instance = entry.getValue();
+            Class<?> clazz = instance.getClass();
+            if (clazz.isAnnotationPresent(Controller.class)) {
+                RequestMapping requestMapping = clazz.getAnnotation(RequestMapping.class);
+                String classPath = requestMapping.value();
+                Method[] methods = clazz.getMethods();
+                for (Method method : methods) {
+                    if (method.isAnnotationPresent(RequestMapping.class)) {
+                        RequestMapping methodMapping = method.getAnnotation(RequestMapping.class);
+                        String methodPath = methodMapping.value();
+                        //完整的映射路径
+                        handlerMap.put(classPath + methodPath, method);
+                    } else {
+                        continue;
+                    }
+                }
+            } else {
+                continue;
+            }
+        }
+    }
+}
+```
+
+### 6.建立项目入口web.xml，并且配置我们编写好的servlet 
+
+```java
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+         version="3.0">
+    <display-name>frank-ssm</display-name>
+    <servlet>
+        <servlet-name>DispatcherServlet</servlet-name>
+        <servlet-class>com.ssm.example.servlet.DispatcherServlet</servlet-class>
+        <load-on-startup>0</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>DispatcherServlet</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping>
+</web-app>
+```
+
+### 7.到这里我们代码就完成了，很简单吧，我们现在配置tomcat跑一下。 
+
+ 这里设置一下web项目的web.xml，不然idea不知道
+
+![pic_817eeb4b.png](http://127.0.0.1:9999/images/pic_817eeb4b.png)
+
+这里我们创建一个打包方式
+
+![pic_ea146f81.png](http://127.0.0.1:9999/images/pic_ea146f81.png)
+
+![pic_6d8d3071.png](http://127.0.0.1:9999/images/pic_6d8d3071.png)
+
+![pic_36f9422a.png](http://127.0.0.1:9999/images/pic_36f9422a.png)
+
+![pic_97ed110a.png](http://127.0.0.1:9999/images/pic_97ed110a.png)
+
+下面我们启动一下tomcat
+
+![pic_2b00d0fd.png](http://127.0.0.1:9999/images/pic_2b00d0fd.png)
+
+nice启动没有报任何错误，我们打开浏览器见证奇迹了。
+
+![pic_f7f04e1a.png](http://127.0.0.1:9999/images/pic_f7f04e1a.png)
+
+完美！！！，哈哈，有意思吧 。。。下期我们再手写个mybatis玩玩，感谢观看！
+
+博客原代码地址:
+
+[https://gitee.com/nanjunyu/ssm-example.git][https_gitee.com_nanjunyu_ssm-example.git]
+
+
+[https_gitee.com_nanjunyu_ssm-example.git]: https://gitee.com/nanjunyu/ssm-example.git

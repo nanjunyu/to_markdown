@@ -1,0 +1,220 @@
+1.下面我们开始给测试服务器10.137.X.X安装mysql
+
+安装环境：RedHat6.5  
+第一步：下载  
+
+
+下载MySQL5.7：[http://dev.mysql.com/get/Downloads/MySQL-5.7/mysql-5.7.12-1.el6.x86\_64.rpm-bundle.tar][http_dev.mysql.com_get_Downloads_MySQL-5.7_mysql-5.7.12-1.el6.x86_64.rpm-bundle.tar]
+
+  
+
+
+安装前检查服务器是否已安装MySQL，如已安装则将其卸载:
+
+```java
+[root@worker1 tmp]# rpm -qa|grep mysql
+mysql-libs-5.1.71-1.el6.x86_64
+[root@worker1 tmp]# rpm -e --nodeps mysql-libs-5.1.71-1.el6.x86_64  //卸载
+```
+
+  
+
+
+2接下来我们删一下残留的mysql目录
+
+find / -name mysql  
+
+
+把找出来的目录用 rm -rf 命令全部删掉 ，和上面一样删完了再检查一遍
+
+![pic_a997b1d8.png](http://127.0.0.1:9999/images/pic_a997b1d8.png)  
+
+
+  
+
+
+3.接下来我们开始删mysql配置文件,这个一定要删，这是主配置文件
+
+  
+
+
+将下载的文件进行解压到root/work下：
+
+```java
+[root@worker1 tmp]# tar -xf mysql-5.7.12-1.el6.x86_64.rpm-bundle.tar
+```
+
+  
+
+
+![pic_ba52d0d3.png](http://127.0.0.1:9999/images/pic_ba52d0d3.png)  
+
+
+  
+
+
+按顺序依次安装：
+
+```java
+1. rpm -ivh mysql-community-common-5.7.12-1.el6.x86_64.rpm
+2. rpm -ivh mysql-community-libs-5.7.12-1.el6.x86_64.rpm
+3. rpm -ivh mysql-community-devel-5.7.12-1.el6.x86_64.rpm
+4. rpm -ivh mysql-community-client-5.7.12-1.el6.x86_64.rpm
+5. rpm -ivh mysql-community-server-5.7.12-1.el6.x86_64.rpm
+```
+
+安装完成如下
+
+![pic_595aab23.png](http://127.0.0.1:9999/images/pic_595aab23.png)  
+
+
+  
+
+
+下面我们开始配置mysql
+
+启动MySQL：service mysqld start 第一次启动会初始化数据库效果如下
+
+![pic_03cbfd48.png](http://127.0.0.1:9999/images/pic_03cbfd48.png)  
+
+
+  
+
+
+  
+
+
+修改MySQL配置文件：vim /etc/my.cnf，在文件末尾加上：skip-grant-tables，保存后重启MySQL服务：service mysqld restart（这样做开启安全模式登录，方便我们第一次登录设置密码）  
+
+
+登录：mysql -u root -p，初次登录密码为空，直接回车：  
+
+
+  
+
+
+mysql> use mysqlmysql> update user set password\_expired='N' where user='root';
+
+mysql> update user set authentication\_string=password('123456') where user='root';
+
+mysql> flush privileges;  
+
+
+如执行错误建议复制到记事本编辑，因为编辑器可能导致引号变成中文或有多余空格。
+
+  
+
+
+![pic_2e6e5b5a.png](http://127.0.0.1:9999/images/pic_2e6e5b5a.png)  
+
+
+  
+
+
+设置密码的时候mysql可能会报
+
+Your password does not satisfy the current policy requirements
+
+意思你的密码太简单不符合安全策略，我们改一下默认策略，因为测试环境我们不想设置很复杂的密码。
+
+  
+
+
+mysql> setglobal validate\_password\_policy=0;
+
+1.  Query OK, 0 rows affected (0.05 sec)
+2.  
+3.  mysql>
+4.  mysql>
+5.  mysql> set global validate\_password\_mixed\_case\_count= 0;
+6.  Query OK, 0 rows affected (0.00 sec)
+7.  
+8.  mysql> set global validate\_password\_number\_count= 3;
+9.  Query OK, 0 rows affected (0.00 sec)
+10. 
+11. mysql> set global validate\_password\_special\_char\_count= 0;
+12. Query OK, 0 rows affected (0.00 sec)
+13. 
+14. mysql> set global validate\_password\_length= 3;
+15. Query OK, 0 rows affected (0.00 sec)
+16. 
+17. mysql> SHOW VARIABLES LIKE 'validate\_password%';
+18. \+ \--------------------------------------+-------+
+19. | Variable\_name | Value |
+20. \+ \--------------------------------------+-------+
+21. | validate\_password\_dictionary\_file | |
+22. | validate\_password\_length | 3 |
+23. | validate\_password\_mixed\_case\_count | 0 |
+24. | validate\_password\_number\_count | 3 |
+25. | validate\_password\_policy | LOW |
+26. | validate\_password\_special\_char\_count | 0 |
+27. \+ \--------------------------------------+-------+
+28. 6 rows in set ( 0.00 sec)
+29.   
+    
+
+  
+登录：mysql -u root -p，初次登录密码为空，直接回车：   
+
+
+注意安装成功以后可能会遇到远程无法连接的情况，需要配置my.cnf
+
+添加 bind-address = 0.0.0.0（代表任何客服端地址都可以连接）  
+
+
+另外需要注意网络或防火墙问题
+
+先看是否能ping通远程服务器，ping 10.137.XX，如果不可以就是网络问题。然后，检查端口是否被防火墙挡住了，telnet 10.137.XX 3306，如果连接失败，配置防火墙。
+
+配置防火墙，开启3306端口  
+vi /etc/sysconfig/iptables  
+\-A INPUT -m state –state NEW -m tcp -p tcp –dport 3306 -j ACCEPT（允许3306端口通过防火墙）  
+/etc/init.d/iptables restart（重启防火墙使配置生效）
+
+  
+
+
+3.检查用户访问权限  
+
+
+MySQL建用户的时候会指定一个host，默认是127.0.0.1/localhost，那么这个用户就只能本机访问，其它机器用这个用户帐号访问会提示没有权限，host改为%，表示允许所有机器访问。
+
+  
+
+
+![pic_2b749bfa.png](http://127.0.0.1:9999/images/pic_2b749bfa.png)  
+
+
+  
+
+
+到这里我们的mysql就安装配置完了，下面我们用Navicat for MySQL测试连接一下，远程连接之前检查一下我们的mysql自己能否用远程命令连上自己，如果不能，肯定是不行的。
+
+首先检查一下3306端口的情况，netstat -apn|grep 3306
+
+这里的地址一定要是指定ip或者0.0.0.0 如果是localhost无法远程连接，如果上面的绑定配置加了的话这里就是0.0.0.0了。
+
+![pic_d67eee90.png](http://127.0.0.1:9999/images/pic_d67eee90.png)
+
+然后我们telnet一下自己
+
+telnet 10.137.X.X，这里是通的
+
+![pic_f1841afa.png](http://127.0.0.1:9999/images/pic_f1841afa.png)  
+
+
+然后我们在服务器上使用远程连接命令连接一下自己，这里如果也可以应该就没问题了
+
+ mysql -h 10.137.X.X -P 3306 -u root -p123  
+
+
+![pic_e5f6e247.png](http://127.0.0.1:9999/images/pic_e5f6e247.png)  
+
+
+上面的检查如果有问题就检查mysql的那些配置都有没有配置好，权限和防火墙那一块。
+
+  
+
+
+
+[http_dev.mysql.com_get_Downloads_MySQL-5.7_mysql-5.7.12-1.el6.x86_64.rpm-bundle.tar]: http://dev.mysql.com/get/Downloads/MySQL-5.7/mysql-5.7.12-1.el6.x86_64.rpm-bundle.tar

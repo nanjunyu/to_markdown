@@ -1,0 +1,121 @@
+最近在写一个商品秒杀的小demo，用的是springBoot2.0.2在进行拦截器配置的时候用的是WebMvcConfigurerAdapter，继承springBoot默认提供的WebMvcConfigurerAdapter类，但是在idea上提示方法已过时，于是通过查找资料用新的方法WebMvcConfigurationSupport代替，这样idea不提示过时了。
+
+![pic_4b84f2fa.png](http://127.0.0.1:9999/images/pic_4b84f2fa.png)  
+
+
+  
+
+
+ 但是这样会引来新的问题，springBoot启动后不加载静态资源了，这种方式会屏蔽Spring Boot的@EnableAutoConfiguration中的设置。这时候启动项目时会发现映射根本没有成功。
+
+  
+
+
+![pic_330a044f.png](http://127.0.0.1:9999/images/pic_330a044f.png)  
+
+
+  
+
+
+于是想到自己来写映射，重写addResourceHandlers方法
+
+  
+
+
+```java
+package com.springboot.buying.snapup.web;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.*;
+
+import java.util.List;
+
+/**
+ * @Author: nanjunyu
+ * @Description:统一拦截器
+ * @Date: Create in  2018/6/21 16:31
+ */
+@Configuration
+public class WebConfig  extends WebMvcConfigurationSupport {
+
+    @Autowired
+    UserCookieCheck userCookieCheck;
+
+    @Override
+    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
+        argumentResolvers.add(userCookieCheck);
+    }
+
+
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/static/**").addResourceLocations("classpath:/resources/static/");
+    }
+
+
+}
+```
+
+但是启动之后还是一样的结果，还是找不到静态资源，于是自己找到了官方文档，发下如下
+
+Deprecated.   
+as of 5.0 WebMvcConfigurer has default methods (made possible by a Java 8 baseline) and can be implemented directly without the need for this adapter   
+
+
+An implementation of WebMvcConfigurer with empty methods allowing subclasses to override only the methods they’re interested in.
+
+  
+
+
+所以这种方式也不推荐，官方推荐另一种处理方式，直接实现WebMvcConfigurer接口，解决问题
+
+  
+
+
+```java
+package com.springboot.buying.snapup.web;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.*;
+
+import java.util.List;
+
+/**
+ * @Author: nanjunyu
+ * @Description:统一拦截器
+ * @Date: Create in  2018/6/21 16:31
+ */
+@Configuration
+public class WebConfig  implements WebMvcConfigurer {
+
+    @Autowired
+    UserCookieCheck userCookieCheck;
+
+    @Override
+    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
+        argumentResolvers.add(userCookieCheck);
+    }
+
+
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/static/**").addResourceLocations("classpath:/resources/static/");
+    }
+
+
+}
+```
+
+  
+
+
+![pic_fcfa3753.png](http://127.0.0.1:9999/images/pic_fcfa3753.png)  
+
+
+# 总结解决问题也不能完全百度看别人的帖子博客，还是多看官方文档多关注官网直接，因为可能别人的回答也过时了。 

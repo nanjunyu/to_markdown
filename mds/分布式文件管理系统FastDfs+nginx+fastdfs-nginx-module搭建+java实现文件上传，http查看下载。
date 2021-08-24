@@ -1,0 +1,311 @@
+现在的项目是个老项目，项目里的附件上传都是放在项目tomcat下，这样很乱影响业务系统性能还不便于迁移维护，空闲之余决定在linux上搭建一个分布式文件管理系统管理附件。这里选择了国产开源大名鼎鼎的的fastDfs。
+
+本帖没有什么技术含量都是按照教程，记录备忘而已下面开始。  
+
+
+需要下载的工具
+
+### 下载地址： 
+
+1.  [fastdfs-5.05下载地址][fastdfs-5.05]
+2.  [libfastcommon-1.0.7下载地址][libfastcommon-1.0.7]
+3.  [fastdfs-nginx-module下载地址][fastdfs-nginx-module]
+4.  [nginx下载地址][nginx](本人用的是最新的nginx-1.15.1.tar最好用新版，以免无法兼容[fastdfs-nginx-module][]插件)
+
+ 第一步：把fastDFS都上传到linux系统。
+
+  
+
+
+ 第二步：安装FastDFS之前，先安装libevent工具包。  
+ 
+
+ yum -y install libevent
+
+  
+
+
+ 第三步：安装libfastcommonV1.0.7工具包。  
+ 
+
+ 1、解压缩，解压完毕的目录
+
+ 2、进入到解压的libfastcommon-1.0.7的目录下，执行./make.sh  
+3、./make.sh install  
+执行完毕会在usr下创建lib64，其中创建文件libfaxtcommon.so  
+4、把/usr/lib64/libfastcommon.so文件向/usr/lib/下复制一份  
+ 
+
+  
+
+
+ 第四步：安装Tracker服务。
+
+ 1、解压缩FastDFS  
+2、进入到解压的FastDFS目录下，执行./make.sh  
+3、./make.sh install  
+安装后在/usr/bin/目录下有以fdfs开头的文件都是编译出来的。  
+ 
+
+ 配置文件都放在/etc/fdfs文件夹下
+
+ 4、把/FastDFS/conf目录下的所有的配置文件都复制到/etc/fdfs下。  
+
+
+5、配置tracker服务。修改/FastDFS/conf/tracker.conf文件。命令vim tracker.conf出现以下界面（查询vi命令使用），修改完毕后拷贝到/etc/fdfs下。
+
+![pic_1b52d94f.png](http://127.0.0.1:9999/images/pic_1b52d94f.png)
+
+ 6、启动tracker。/usr/bin/fdfs\_trackerd /etc/fdfs/tracker.conf  
+
+
+重启使用命令：/usr/bin/fdfs\_trackerd /etc/fdfs/tracker.conf restart
+
+  
+
+
+第五步：安装storage服务。  
+1、如果是在不同的服务器安装，第四步的1~4需要重新执行。  
+
+
+2、配置storage服务。修改/FastDFS/conf/storage.conf文件，路径修改为自己指定的。
+
+![pic_7f968260.png](http://127.0.0.1:9999/images/pic_7f968260.png)  
+
+
+  
+
+
+![pic_11ca2fca.png](http://127.0.0.1:9999/images/pic_11ca2fca.png)  
+
+
+  
+
+
+![pic_1024f969.png](http://127.0.0.1:9999/images/pic_7f968260.png)  
+
+
+  
+
+
+3、启动storage服务。/usr/bin/fdfs\_storaged /etc/fdfs/storage.conf  
+
+
+重启：/usr/bin/fdfs\_storaged /etc/fdfs/storage.conf restart
+
+  
+
+
+启动成功后在配置的图片保存路径下创建data文件夹，在data生成两级256个16进制命名的文件夹，，部分截图如下：  
+
+
+  
+
+
+![pic_9a72037b.png](http://127.0.0.1:9999/images/pic_9a72037b.png)  
+
+
+  
+
+
+第六步：安装nginx服务。  
+
+
+1、将安装包上传，解压，命令tar -xvf nginx-1.10.3.tar.gz；
+
+2、自定义创建一个文件夹作为Nginx安装目录，这里在home下创建nginx文件夹；
+
+3、在解压的文件夹（nginx-1.10.3）下执行`./configure --prefix=/home/nginx` 命令。  
+意思即配置安装环境，将会把Nginx安装到/home/nginx下；
+
+需要安装的依赖  
+
+
+`yum -y install gcc gcc-c++ autoconf automake make`
+
+`yum -y install pcre-devel 安装依赖，`
+
+`yum install -y zlib-devel 安装依赖，`
+
+4、编译：在解压的文件夹下先后执行make 和 make install 命令
+
+5、启动命令： /home/nginx/sbin/nginx -c /home/nginx/conf/nginx.conf。   
+
+
+打开防火墙对应端口供访问，8088，当然也可以直接关了防火墙。 启动完了我们看一下nginx主页
+
+![pic_75d5fe17.png](http://127.0.0.1:9999/images/pic_75d5fe17.png)  
+
+
+  
+
+
+  
+
+
+第七步：搭建nginx提供http服务。  
+可以使用官方提供的nginx插件。要使用nginx插件需要重新编译。  
+fastdfs-nginx-module\_v1.16.tar.gz  
+1、解压插件压缩包  
+
+
+2、修改/fastdfs-nginx-module/src/config文件，把其中的local去掉。
+
+![pic_20479376.png](http://127.0.0.1:9999/images/pic_20479376.png)  
+
+
+  
+
+
+3、对nginx重新config，到nginx conf目录下执行
+
+  
+  
+
+
+ ./configure \\
+
+ \--add-module=/usr/fastdfs-nginx-module/src 注意自己的安装路径  
+
+
+  
+
+
+4、make  
+5、make install  
+
+
+6、把/fastdfs-nginx-module/src/mod\_fastdfs.conf文件复制到/etc/fdfs目录下。编辑：
+
+![pic_5ae8aa2e.png](http://127.0.0.1:9999/images/pic_5ae8aa2e.png)  
+
+
+ 之前配置的图片路径
+
+![pic_31a01de0.png](http://127.0.0.1:9999/images/pic_31a01de0.png)  
+
+
+  
+
+
+ 7、nginx的配置  
+
+
+ 在nginx的conf文件中找到nginx.conf修改Server配置：
+
+![pic_8b0f6e76.png](http://127.0.0.1:9999/images/pic_8b0f6e76.png)  
+
+
+  
+
+
+ 8、将lib64下的libfdfsclient.so拷贝至/usr/lib下  
+ cp /usr/lib64/libfdfsclient.so /usr/lib/  
+ 9、重启nginx  
+
+
+第八步模拟上传一个看一下
+
+接下来测试fdfs上传的文件是否也能显示，首先在桌面上准备一张图片：test.jpg，输入下面的命令
+
+```java
+fdfs_upload_file /etc/fdfs/client.conf  /home/test.png
+```
+
+![pic_b6561e50.png](http://127.0.0.1:9999/images/pic_b6561e50.png)
+
+返回 group1/M00/00/00/CoklRFtHGJeAHtdbADa8MdYXYOU877.jpg
+
+接下来我们在浏览器打开看一下，如果能看到说明我们nginx服务器是搭建成功的。
+
+![pic_48c53ec1.png](http://127.0.0.1:9999/images/pic_48c53ec1.png)  
+
+
+  
+
+
+这里是可以显示的，说明我们的fastdfs搭建是成功的。
+
+  
+
+
+接下来我们在java代码里实现文件上传
+
+我们在resources目录下建立一个fastdfs的properties配置文件
+
+```java
+## fastdfs-client.properties
+
+fastdfs.connect_timeout_in_seconds = 5
+fastdfs.network_timeout_in_seconds = 30
+
+fastdfs.charset = UTF-8
+
+fastdfs.http_anti_steal_token = false
+fastdfs.http_secret_key = FastDFS1234567890
+fastdfs.http_tracker_http_port = 80
+
+tracker_server = 10.137.x.x:22122
+```
+
+  
+
+
+我们写一个测试方法
+
+```java
+/**
+* @Author: nanjunyu
+* @Description:使用將文件上传到fastdfs文件服务器
+* @Date: Create in  2018/7/12 17:28
+* @params: 
+* @return:  
+*/
+@Test
+public void uploadFile() throws Exception {
+    //1、添加fastdfs_client.jar
+    //2、创建配置文件，说明tracker_server的地址
+    //3、加载配置文件
+    ClientGlobal.init("fastdfs-client.properties");
+    //4、创建trackerClient对象
+    TrackerClient trackerClient = new TrackerClient();
+    //5、获取trackerServer
+    TrackerServer trackerServer = trackerClient.getConnection();
+    //6、创建storageServer
+    StorageServer storageServer = null;
+    //7、创建一个StorageClient对象，需要两个参数TrackerServer对象、StorageServer的引用
+    StorageClient storageClient = new StorageClient(trackerServer, storageServer);
+    //8、使用StorageClient对象上传图片。
+    String[] adds = storageClient.upload_file("F:\\123.png", "png", null);
+    //9、返回地址
+    for (String string : adds) {
+        System.out.println(string);
+    }
+}
+```
+
+上传成功了 ，控制台打印了返回的地址，我们在浏览器打开看看吧。
+
+  
+
+
+![pic_a67fdfab.png](http://127.0.0.1:9999/images/pic_a67fdfab.png)
+
+  
+
+
+下面就是见证奇迹的时刻！！！
+
+图片可以访问，大功告成！
+
+  
+
+
+![pic_d7a95a97.png](http://127.0.0.1:9999/images/pic_d7a95a97.png)  
+
+
+
+[fastdfs-5.05]: https://github.com/ricciozhang/fastdfs/releases
+[libfastcommon-1.0.7]: https://github.com/happyfish100/libfastcommon/releases
+[fastdfs-nginx-module]: https://github.com/happyfish100/fastdfs-nginx-module
+[nginx]: http://nginx.org/download/

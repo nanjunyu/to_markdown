@@ -1,0 +1,543 @@
+ *   jps
+
+jps是java提供的一个显示当前所有java进程pid的命令，适合在linux/unix平台上简单察看当前java进程的一些简单情况。
+
+很多人都是用过unix系统里的ps命令，这个命令主要是用来显示当前系统的进程情况，有哪些进程以及进程id。 jps 也是一样，它的作用是显示当前系统的java进程情况及进程id。我们可以通过它来查看我们到底启动了几个java进程（因为每一个java程序都会独占一个java虚拟机实例）并可通过opt来查看这些进程的详细启动参数。
+
+如果在 linux 中想查看 java 的进程，一般我们都需要 ps -ef | grep java 来获取进程 ID。如果只想获取 Java 程序的进程，可以直接使用 jps 命令来直接查看。
+
+## jps 用法 
+
+![pic_d3dfc233.png](http://127.0.0.1:9999/images/pic_d3dfc233.png)
+
+参数说明
+
+\-q：只输出进程 ID  
+\-m：输出传入 main 方法的参数  
+\-l：输出完全的包名，应用主类名，jar的完全路径名  
+\-v：输出jvm参数  
+\-V：输出通过flag文件传递到JVM中的参数
+
+jps 不带参数，默认显示 进程ID 和 启动类的名称。
+
+![pic_8e4c6954.png](http://127.0.0.1:9999/images/pic_8e4c6954.png)
+
+ *  ## jps -q 
+
+参数 -q 只输出进程ID，而不显示出类的名称
+
+![pic_660575de.png](http://127.0.0.1:9999/images/pic_660575de.png)
+
+ *  ## jps -m 
+
+-m 输出传递给main方法的参数，在嵌入式jvm上可能是null
+
+![pic_e23e0841.png](http://127.0.0.1:9999/images/pic_e23e0841.png)
+
+ *  ## jps -l 
+
+-l 输出应用程序main class的完整package名或者应用程序的jar文件完整路径名.
+
+![pic_d9b8b970.png](http://127.0.0.1:9999/images/pic_d9b8b970.png)
+
+ *  ## jps -v 
+
+-v 输出传递给JVM的参数
+
+![pic_fb4e70f6.png](http://127.0.0.1:9999/images/pic_fb4e70f6.png)
+
+ *  ## jps 原理 
+
+java程序在启动以后，会在java.io.tmpdir指定的目录下，就是临时文件夹里，生成一个类似于hsperfdata\_User的文件夹，这个文件夹里（在Linux中为/tmp/hsperfdata\_\{userName\}/），有几个文件，名字就是java进程的pid，因此列出当前运行的java进程，只是把这个目录里的文件名列一下而已。 至于系统的参数什么，就可以解析这几个文件获得。
+
+ *  jstat
+
+## jstat 用法 
+
+jstat是用于监视虚拟机各种运行状态信息的命令行工具。它可以显示本地或者远程虚拟机进程中的类装载、内存、垃圾收集、JIT编译等运行数据，在没有GUI图形界面，只提供了纯文本控制台环境的服务器上，它将是运行期定位虚拟机性能问题的首选工具。
+
+![pic_5f3fa907.png](http://127.0.0.1:9999/images/pic_5f3fa907.png)
+
+ *  option： 参数选项
+ *  -t： 可以在打印的列加上Timestamp列，用于显示系统运行的时间
+ *  -h： 可以在周期性数据数据的时候，可以在指定输出多少行以后输出一次表头
+ *  vmid： Virtual Machine ID（ 进程的 pid）
+ *  interval： 执行每次的间隔时间，单位为毫秒
+ *  count： 用于指定输出多少次记录，缺省则会一直打印
+ *  ## jstat -option 
+
+![pic_5d05ecfb.png](http://127.0.0.1:9999/images/pic_5d05ecfb.png)
+
+\-class (类加载器)
+
+\-compiler (JIT)
+
+\-gc (GC堆状态)
+
+\-gccapacity (各区大小)
+
+\-gccause (最近一次GC统计和原因)
+
+\-gcnew (新区统计)
+
+\-gcnewcapacity (新区大小)
+
+\-gcold (老区统计)
+
+\-gcoldcapacity (老区大小)
+
+\-gcpermcapacity (永久区大小)
+
+\-gcutil (GC统计汇总)
+
+\-printcompilation (HotSpot编译统计)
+
+ *  ## jstat -class 
+
+显示加载class的数量，及所占空间等信息。
+
+```java
+jstat -class <pid>
+```
+
+![pic_9accb53f.png](http://127.0.0.1:9999/images/pic_9accb53f.png)
+
+ *  Loaded : 已经装载的类的数量
+ *  Bytes : 装载类所占用的字节数
+ *  Unloaded：已经卸载类的数量
+ *  Bytes：卸载类的字节数
+ *  Time：装载和卸载类所花费的时间
+ *  ## jstat -compiler 
+
+显示VM实时编译(JIT)的数量等信息。
+
+```java
+jstat -compiler <pid>
+```
+
+![pic_43f65ee7.png](http://127.0.0.1:9999/images/pic_43f65ee7.png)
+
+ *  Compiled：编译任务执行数量
+ *  Failed：编译任务执行失败数量
+ *  Invalid ：编译任务执行失效数量
+ *  Time ：编译任务消耗时间
+ *  FailedType：最后一个编译失败任务的类型
+ *  FailedMethod：最后一个编译失败任务所在的类及方法
+ *  ## jstat -gc 
+
+显示gc相关的堆信息，查看gc的次数，及时间。
+
+```java
+jstat –gc <pid>
+```
+
+![pic_f3270662.png](http://127.0.0.1:9999/images/pic_f3270662.png)
+
+ *  S0C：年轻代中第一个survivor（幸存区）的容量 （字节）
+ *  S1C：年轻代中第二个survivor（幸存区）的容量 (字节)
+ *  S0U ：年轻代中第一个survivor（幸存区）目前已使用空间 (字节)
+ *  S1U ：年轻代中第二个survivor（幸存区）目前已使用空间 (字节)
+ *  EC ：年轻代中Eden（伊甸园）的容量 (字节)
+ *  EU ：年轻代中Eden（伊甸园）目前已使用空间 (字节)
+ *  OC ：Old代的容量 (字节)
+ *  OU ：Old代目前已使用空间 (字节)
+ *  MC：metaspace(元空间)的容量 (字节)
+ *  MU：metaspace(元空间)目前已使用空间 (字节)
+ *  YGC ：从应用程序启动到采样时年轻代中gc次数
+ *  YGCT ：从应用程序启动到采样时年轻代中gc所用时间(s)
+ *  FGC ：从应用程序启动到采样时old代(全gc)gc次数
+ *  FGCT ：从应用程序启动到采样时old代(全gc)gc所用时间(s)
+ *  GCT：从应用程序启动到采样时gc用的总时间(s)
+ *  ## jstat -gccapacity  
+
+可以显示，VM内存中三代（young,old,perm）对象的使用和占用大小
+
+```java
+jstat -gccapacity <pid>
+```
+
+![pic_77842f2a.png](http://127.0.0.1:9999/images/pic_77842f2a.png)
+
+ *  NGCMN ：年轻代(young)中初始化(最小)的大小(字节)
+ *  NGCMX ：年轻代(young)的最大容量 (字节)
+ *  NGC ：年轻代(young)中当前的容量 (字节)
+ *  S0C ：年轻代中第一个survivor（幸存区）的容量 (字节)
+ *  S1C ： 年轻代中第二个survivor（幸存区）的容量 (字节)
+ *  EC ：年轻代中Eden（伊甸园）的容量 (字节)
+ *  OGCMN ：old代中初始化(最小)的大小 (字节)
+ *  OGCMX ：old代的最大容量(字节)
+ *  OGC：old代当前新生成的容量 (字节)
+ *  OC ：Old代的容量 (字节)
+ *  MCMN：metaspace(元空间)中初始化(最小)的大小 (字节)
+ *  MCMX ：metaspace(元空间)的最大容量 (字节)
+ *  MC ：metaspace(元空间)当前新生成的容量 (字节)
+ *  CCSMN：最小压缩类空间大小
+ *  CCSMX：最大压缩类空间大小
+ *  CCSC：当前压缩类空间大小
+ *  YGC ：从应用程序启动到采样时年轻代中gc次数
+ *  FGC：从应用程序启动到采样时old代(全gc)gc次数
+ *  ## jstat -gcmetacapacity 
+
+metaspace 中对象的信息及其占用量。
+
+```java
+jstat -gcmetacapacity<pid>
+```
+
+![pic_1f98fdf7.png](http://127.0.0.1:9999/images/pic_1f98fdf7.png)
+
+ *  MCMN:最小元数据容量
+ *  MCMX：最大元数据容量
+ *  MC：当前元数据空间大小
+ *  CCSMN：最小压缩类空间大小
+ *  CCSMX：最大压缩类空间大小
+ *  CCSC：当前压缩类空间大小
+ *  YGC ：从应用程序启动到采样时年轻代中gc次数
+ *  FGC ：从应用程序启动到采样时old代(全gc)gc次数
+ *  FGCT ：从应用程序启动到采样时old代(全gc)gc所用时间(s)
+ *  GCT：从应用程序启动到采样时gc用的总时间(s)
+ *  ## jstat -gcnew 
+
+年轻代对象的信息。
+
+```java
+jstat -gcnew <pid>
+```
+
+![pic_fb1e05aa.png](http://127.0.0.1:9999/images/pic_fb1e05aa.png)
+
+ *  S0C ：年轻代中第一个survivor（幸存区）的容量 (字节)
+ *  S1C ：年轻代中第二个survivor（幸存区）的容量 (字节)
+ *  S0U ：年轻代中第一个survivor（幸存区）目前已使用空间 (字节)
+ *  S1U ：年轻代中第二个survivor（幸存区）目前已使用空间 (字节)
+ *  TT：持有次数限制
+ *  MTT：最大持有次数限制
+ *  DSS：期望的幸存区大小
+ *  EC：年轻代中Eden（伊甸园）的容量 (字节)
+ *  EU ：年轻代中Eden（伊甸园）目前已使用空间 (字节)
+ *  YGC ：从应用程序启动到采样时年轻代中gc次数
+ *  YGCT：从应用程序启动到采样时年轻代中gc所用时间(s)
+ *  ## jstat -gcnewcapacity  
+
+年轻代对象的信息及其占用量
+
+```java
+jstat -gcnewcapacity <pid>
+```
+
+![pic_5e228fb6.png](http://127.0.0.1:9999/images/pic_5e228fb6.png)
+
+ *  NGCMN ：年轻代(young)中初始化(最小)的大小(字节)
+ *  NGCMX ：年轻代(young)的最大容量 (字节)
+ *  NGC ：年轻代(young)中当前的容量 (字节)
+ *  S0CMX ：年轻代中第一个survivor（幸存区）的最大容量 (字节)
+ *  S0C ：年轻代中第一个survivor（幸存区）的容量 (字节)
+ *  S1CMX ：年轻代中第二个survivor（幸存区）的最大容量 (字节)
+ *  S1C：年轻代中第二个survivor（幸存区）的容量 (字节)
+ *  ECMX：年轻代中Eden（伊甸园）的最大容量 (字节)
+ *  EC：年轻代中Eden（伊甸园）的容量 (字节)
+ *  YGC：从应用程序启动到采样时年轻代中gc次数
+ *  FGC：从应用程序启动到采样时old代(全gc)gc次数
+
+ *  ## jstat -gcold  
+
+old代对象的信息
+
+```java
+jstat -gcold <pid>
+```
+
+![pic_63203bfe.png](http://127.0.0.1:9999/images/pic_63203bfe.png)
+
+ *  MC ：metaspace(元空间)的容量 (字节)
+ *  MU：metaspace(元空间)目前已使用空间 (字节)
+ *  CCSC:压缩类空间大小
+ *  CCSU:压缩类空间使用大小
+ *  OC：Old代的容量 (字节)
+ *  OU：Old代目前已使用空间 (字节)
+ *  YGC：从应用程序启动到采样时年轻代中gc次数
+ *  FGC：从应用程序启动到采样时old代(全gc)gc次数
+ *  FGCT：从应用程序启动到采样时old代(全gc)gc所用时间(s)
+ *  GCT：从应用程序启动到采样时gc用的总时间(s)
+ *  ## jstat -gcoldcapacity  
+
+old代对象的信息及其占用量
+
+```java
+jstat -gcoldcapacity <pid>
+```
+
+![pic_ff63798a.png](http://127.0.0.1:9999/images/pic_ff63798a.png)
+
+ *  OGCMN ：old代中初始化(最小)的大小 (字节)
+ *  OGCMX ：old代的最大容量(字节)
+ *  OGC ：old代当前新生成的容量 (字节)
+ *  OC ：Old代的容量 (字节)
+ *  YGC ：从应用程序启动到采样时年轻代中gc次数
+ *  FGC ：从应用程序启动到采样时old代(全gc)gc次数
+ *  FGCT ：从应用程序启动到采样时old代(全gc)gc所用时间(s)
+ *  GCT：从应用程序启动到采样时gc用的总时间(s)
+ *  ##  jstat - gcutil  
+
+统计gc信息
+
+```java
+jstat -gcutil <pid>
+```
+
+ *  ![pic_e2fd9088.png](http://127.0.0.1:9999/images/pic_e2fd9088.png)
+ *  S0 ：年轻代中第一个survivor（幸存区）已使用的占当前容量百分比
+ *  S1 ：年轻代中第二个survivor（幸存区）已使用的占当前容量百分比
+ *  E ：年轻代中Eden（伊甸园）已使用的占当前容量百分比
+ *  O ：old代已使用的占当前容量百分比
+ *  P ：perm代已使用的占当前容量百分比
+ *  YGC ：从应用程序启动到采样时年轻代中gc次数
+ *  YGCT ：从应用程序启动到采样时年轻代中gc所用时间(s)
+ *  FGC ：从应用程序启动到采样时old代(全gc)gc次数
+ *  FGCT ：从应用程序启动到采样时old代(全gc)gc所用时间(s)
+ *  GCT：从应用程序启动到采样时gc用的总时间(s)
+ *  ## jstat -gccause  
+
+显示垃圾回收的相关信息（通-gcutil）,同时显示最后一次或当前正在发生的垃圾回收的诱因。
+
+```java
+jstat -gccause <pid>
+```
+
+![pic_da40d915.png](http://127.0.0.1:9999/images/pic_da40d915.png)
+
+ *  LGCC：最后一次GC原因
+ *  GCC：当前GC原因（No GC 为当前没有执行GC）
+ *  ## jstat -printcompilation  
+
+当前VM执行的信息。
+
+```java
+jstat -printcompilation <pid>
+```
+
+![pic_c1c9cf69.png](http://127.0.0.1:9999/images/pic_c1c9cf69.png)
+
+ *  Compiled ：编译任务的数目
+ *  Size ：方法生成的字节码的大小
+ *  Type：编译类型
+ *  Method：类名和方法名用来标识编译的方法。类名使用/做为一个命名空间分隔符。方法名是给定类中的方法。上述格式是由-XX:+PrintComplation选项进行设置的
+
+ *  jinfo
+
+jinfo 是 JDK 自带的命令，可以用来查看正在运行的 java 应用程序的扩展参数，包括Java System属性和JVM命令行参数；也可以动态的修改正在运行的 JVM 一些参数。当系统崩溃时，jinfo可以从core文件里面知道崩溃的Java应用程序的配置信息
+
+## jinfo 用法 
+
+![pic_e6eecbe3.png](http://127.0.0.1:9999/images/pic_e6eecbe3.png)
+
+参数说明
+
+ *  pid 对应jvm的进程id
+ *  executable core 产生core dump文件
+ *  \[server-id@\]remote server IP or hostname 远程的ip或者hostname，server-id标记服务的唯一性id
+
+option
+
+ *  no option 输出全部的参数和系统属性
+ *  \-flag name 输出对应名称的参数
+ *  \-flag \[+|-\]name 开启或者关闭对应名称的参数
+ *  \-flag name=value 设定对应名称的参数
+ *  \-flags 输出全部的参数
+ *  \-sysprops 输出系统属性
+
+Javacore 概述
+
+Javacore，也可以称为“threaddump”或是“javadump”，它是 Java 提供的一种诊断特性，能够提供一份可读的当前运行的 JVM 中线程使用情况的快照。即在某个特定时刻，JVM 中有哪些线程在运行，每个线程执行到哪一个类，哪一个方法。  
+应用程序如果出现不可恢复的错误或是内存泄露，就会自动触发 Javacore 的生成。
+
+  
+jinfo pid 输出当前 jvm 进程的全部参数和系统属性
+
+```java
+jinfo pid
+```
+
+ *  1.
+
+```java
+Attaching to process ID 22075, please wait...
+Debugger attached successfully.
+Server compiler detected.
+JVM version is 25.211-b12
+Java System Properties:
+
+java.runtime.name = Java(TM) SE Runtime Environment
+java.vm.version = 25.211-b12
+sun.boot.library.path = /usr/java/jdk1.8.0_211-amd64/jre/lib/amd64
+java.vendor.url = http://java.oracle.com/
+java.vm.vendor = Oracle Corporation
+path.separator = :
+file.encoding.pkg = sun.io
+java.vm.name = Java HotSpot(TM) 64-Bit Server VM
+sun.os.patch.level = unknown
+sun.java.launcher = SUN_STANDARD
+user.country = CN
+user.dir = /usr/java/jpress/starter/target/starter-2.0
+java.vm.specification.name = Java Virtual Machine Specification
+java.runtime.version = 1.8.0_211-b12
+java.awt.graphicsenv = sun.awt.X11GraphicsEnvironment
+os.arch = amd64
+java.endorsed.dirs = /usr/java/jdk1.8.0_211-amd64/jre/lib/endorsed
+line.separator = 
+
+java.io.tmpdir = /tmp
+java.vm.specification.vendor = Oracle Corporation
+os.name = Linux
+sun.jnu.encoding = UTF-8
+java.library.path = /usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib
+sun.nio.ch.bugLevel = 
+java.specification.name = Java Platform API Specification
+java.class.version = 52.0
+sun.management.compiler = HotSpot 64-Bit Tiered Compilers
+os.version = 3.10.0-693.2.2.el7.x86_64
+user.home = /root
+user.timezone = Asia/Shanghai
+java.awt.printerjob = sun.print.PSPrinterJob
+file.encoding = UTF-8
+java.specification.version = 1.8
+user.name = root
+java.class.path = /usr/java/jpress/starter/target/starter-2.0/config:/usr/java/jpress/starter/target/starter-2.0/lib/jna-4.5.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-jaxrs-1.8.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/xnio-api-3.3.8.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/stax-api-1.0.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/icu4j-58.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-io-2.6.jar:/usr/java/jpress/starter/target/starter-2.0/lib/fastjson-1.2.57.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commonmark-ext-yaml-front-matter-0.12.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/codegen-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-core-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/gson-2.2.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-rest-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-queryparser-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/json-20131018.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-spatial3d-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jfinal-weixin-2.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-web-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jcl-over-slf4j-1.7.7.jar:/usr/java/jpress/starter/target/starter-2.0/lib/ST4-4.0.8.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-join-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commonmark-ext-gfm-tables-0.12.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/javax.mail-1.6.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/HikariCP-3.3.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/sharding-transaction-core-3.1.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-search-es-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/animal-sniffer-annotations-1.17.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-memory-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-codec-1.10.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-secure-sm-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/undertow-servlet-2.0.19.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/slf4j-api-1.7.25.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-talk-model-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/antlr-runtime-3.5.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/starter-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-web-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-java-sdk-sts-3.0.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-spatial-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/httpcore-4.4.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-model-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/objenesis-2.5.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-core-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-dataformat-yaml-2.8.11.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jcseg-analyzer-2.4.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jsoup-1.11.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/cglib-nodep-3.2.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/javassist-3.21.0-GA.jar:/usr/java/jpress/starter/target/starter-2.0/lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-talk-service-provider-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-suggest-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/httpcore-nio-4.4.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-java-sdk-core-3.4.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-annotations-2.9.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-search-db-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/javax.servlet-api-4.0.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-sandbox-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/metrics-core-4.0.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-logging-1.1.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-sdk-oss-3.4.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-search-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/httpclient-4.4.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-lang-2.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-java-sdk-ram-3.0.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jjwt-0.9.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-page-service-provider-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/parent-join-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/hppc-0.7.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-cli-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-page-model-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/ehcache-2.10.6.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-search-lucene-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-lang3-3.8.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-photo-service-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/guava-27.1-jre.jar:/usr/java/jpress/starter/target/starter-2.0/lib/logback-core-1.2.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jettison-1.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/HdrHistogram-2.1.9.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jopt-simple-5.0.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jfinal-3.8.jar:/usr/java/jpress/starter/target/starter-2.0/lib/groovy-2.4.5-indy.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-photo-service-provider-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-sdk-opensearch-3.3.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-page-service-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-mapper-asl-1.8.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-service-provider-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-grouping-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jboss-websocket-api_1.1_spec-1.1.3.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-databind-2.9.6.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jedis-2.10.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-xc-1.8.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-service-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/javax.json-1.0.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-dataformat-smile-2.8.11.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-rest-high-level-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/logback-classic-1.2.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-pool2-2.4.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jsr305-3.0.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-misc-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jcseg-core-2.4.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/thumbnailator-0.4.8.jar:/usr/java/jpress/starter/target/starter-2.0/lib/javax.mail-api-1.6.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/libthrift-0.9.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/failureaccess-1.0.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jaxb-impl-2.2.3-1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jersey-core-1.9.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jersey-json-1.9.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-java-sdk-ecs-4.2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jfinal-undertow-1.6.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jboss-logging-3.3.2.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-spatial-extras-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/t-digest-3.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/rank-eval-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-page-web-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-search-opensearch-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/core-3.1.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-template-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-highlighter-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jaxb-api-2.2.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/joda-time-2.10.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jdom-1.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-talk-web-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-analyzers-common-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-core-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/error_prone_annotations-2.2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/snakeyaml-1.16.jar:/usr/java/jpress/starter/target/starter-2.0/lib/org.abego.treelayout.core-1.0.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commonmark-0.12.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-x-content-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/antlr4-runtime-4.7.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jboot-2.0.8.jar:/usr/java/jpress/starter/target/starter-2.0/lib/cron4j-2.2.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-commons-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/xnio-nio-3.3.8.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-service-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/sharding-jdbc-core-3.1.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/activation-1.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-queries-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/mysql-connector-java-5.1.47.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-dataformat-cbor-2.8.11.jar:/usr/java/jpress/starter/target/starter-2.0/lib/checker-qual-2.5.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/compiler-0.9.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lang-mustache-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/undertow-websockets-jsr-2.0.19.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-talk-service-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/antlr4-4.7.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/undertow-core-2.0.19.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-core-asl-1.8.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/fst-2.57.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-photo-web-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-model-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-photo-model-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-backward-codecs-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/cos-2017.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aggs-matrix-stats-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/sharding-core-3.1.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/j2objc-annotations-1.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/stax-api-1.0-2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-core-2.8.8.jar:/usr/java/jpress/starter/target/starter-2.0/lib/httpasyncclient-4.1.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-service-provider-2.0.jar
+java.vm.specification.version = 1.8
+sun.arch.data.model = 64
+sun.java.command = io.jpress.Starter
+java.home = /usr/java/jdk1.8.0_211-amd64/jre
+user.language = zh
+java.specification.vendor = Oracle Corporation
+awt.toolkit = sun.awt.X11.XToolkit
+java.vm.info = mixed mode
+java.version = 1.8.0_211
+java.ext.dirs = /usr/java/jdk1.8.0_211-amd64/jre/lib/ext:/usr/java/packages/lib/ext
+sun.boot.class.path = /usr/java/jdk1.8.0_211-amd64/jre/lib/resources.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/rt.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/sunrsasign.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/jsse.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/jce.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/charsets.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/jfr.jar:/usr/java/jdk1.8.0_211-amd64/jre/classes
+java.vendor = Oracle Corporation
+com.zaxxer.hikari.pool_number = 3
+file.separator = /
+java.vendor.url.bug = http://bugreport.sun.com/bugreport/
+sun.io.unicode.encoding = UnicodeLittle
+sun.font.fontmanager = sun.awt.X11FontManager
+sun.cpu.endian = little
+sun.cpu.isalist = 
+
+VM Flags:
+Non-default VM flags: -XX:-BytecodeVerificationLocal -XX:-BytecodeVerificationRemote -XX:CICompilerCount=2 -XX:InitialHeapSize=31457280 -XX:MaxHeapSize=482344960 -XX:MaxNewSize=160759808 -XX:MinHeapDeltaBytes=196608 -XX:NewSize=10485760 -XX:OldSize=20971520 -XX:+UseCompressedClassPointers -XX:+UseCompressedOops 
+Command line:  -Xverify:none
+```
+
+ *  ##  jinfo -flag name 
+
+输出对应名称的参数
+
+```java
+jinfo -flag name pid
+```
+
+![pic_2fb23718.png](http://127.0.0.1:9999/images/pic_2fb23718.png)
+
+使用该命令，可以查看指定的 jvm 参数的值。如：查看当前 jvm 进程是否开启打印 GC 日志。
+
+ *  ## jinfo -flag \[+|-\]name 
+
+```java
+jinfo -flag [+|-]name pid
+```
+
+开启或者关闭对应名称的参数,使用 jinfo 可以在不重启虚拟机的情况下，可以动态的修改 jvm 的参数。尤其在线上的环境特别有用。
+
+![pic_80f5db53.png](http://127.0.0.1:9999/images/pic_80f5db53.png)
+
+ *  ## jinfo -flag name=value  
+
+修改指定参数的值。
+
+```java
+jinfo -flag name=value pid
+```
+
+![pic_394af73c.png](http://127.0.0.1:9999/images/pic_394af73c.png)
+
+我这里没有生成dump文件所以为空
+
+ *  ##  jinfo -flags  
+
+输出全部的参数
+
+```java
+jinfo -flags pid
+```
+
+![pic_c2f91980.png](http://127.0.0.1:9999/images/pic_c2f91980.png)
+
+ *  ## jinfo -sysprops 
+
+输出当前 jvm 进行的全部的系统属性
+
+```java
+jinfo -sysprops pid
+```
+
+```java
+Attaching to process ID 22075, please wait...
+Debugger attached successfully.
+Server compiler detected.
+JVM version is 25.211-b12
+java.runtime.name = Java(TM) SE Runtime Environment
+java.vm.version = 25.211-b12
+sun.boot.library.path = /usr/java/jdk1.8.0_211-amd64/jre/lib/amd64
+java.vendor.url = http://java.oracle.com/
+java.vm.vendor = Oracle Corporation
+path.separator = :
+file.encoding.pkg = sun.io
+java.vm.name = Java HotSpot(TM) 64-Bit Server VM
+sun.os.patch.level = unknown
+sun.java.launcher = SUN_STANDARD
+user.country = CN
+user.dir = /usr/java/jpress/starter/target/starter-2.0
+java.vm.specification.name = Java Virtual Machine Specification
+java.runtime.version = 1.8.0_211-b12
+java.awt.graphicsenv = sun.awt.X11GraphicsEnvironment
+os.arch = amd64
+java.endorsed.dirs = /usr/java/jdk1.8.0_211-amd64/jre/lib/endorsed
+line.separator = 
+
+java.io.tmpdir = /tmp
+java.vm.specification.vendor = Oracle Corporation
+os.name = Linux
+sun.jnu.encoding = UTF-8
+java.library.path = /usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib
+sun.nio.ch.bugLevel = 
+java.specification.name = Java Platform API Specification
+java.class.version = 52.0
+sun.management.compiler = HotSpot 64-Bit Tiered Compilers
+os.version = 3.10.0-693.2.2.el7.x86_64
+user.home = /root
+user.timezone = Asia/Shanghai
+java.awt.printerjob = sun.print.PSPrinterJob
+file.encoding = UTF-8
+java.specification.version = 1.8
+user.name = root
+java.class.path = /usr/java/jpress/starter/target/starter-2.0/config:/usr/java/jpress/starter/target/starter-2.0/lib/jna-4.5.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-jaxrs-1.8.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/xnio-api-3.3.8.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/stax-api-1.0.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/icu4j-58.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-io-2.6.jar:/usr/java/jpress/starter/target/starter-2.0/lib/fastjson-1.2.57.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commonmark-ext-yaml-front-matter-0.12.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/codegen-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-core-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/gson-2.2.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-rest-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-queryparser-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/json-20131018.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-spatial3d-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jfinal-weixin-2.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-web-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jcl-over-slf4j-1.7.7.jar:/usr/java/jpress/starter/target/starter-2.0/lib/ST4-4.0.8.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-join-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commonmark-ext-gfm-tables-0.12.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/javax.mail-1.6.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/HikariCP-3.3.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/sharding-transaction-core-3.1.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-search-es-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/animal-sniffer-annotations-1.17.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-memory-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-codec-1.10.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-secure-sm-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/undertow-servlet-2.0.19.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/slf4j-api-1.7.25.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-talk-model-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/antlr-runtime-3.5.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/starter-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-web-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-java-sdk-sts-3.0.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-spatial-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/httpcore-4.4.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-model-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/objenesis-2.5.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-core-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-dataformat-yaml-2.8.11.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jcseg-analyzer-2.4.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jsoup-1.11.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/cglib-nodep-3.2.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/javassist-3.21.0-GA.jar:/usr/java/jpress/starter/target/starter-2.0/lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-talk-service-provider-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-suggest-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/httpcore-nio-4.4.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-java-sdk-core-3.4.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-annotations-2.9.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-search-db-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/javax.servlet-api-4.0.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-sandbox-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/metrics-core-4.0.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-logging-1.1.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-sdk-oss-3.4.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-search-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/httpclient-4.4.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-lang-2.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-java-sdk-ram-3.0.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jjwt-0.9.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-page-service-provider-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/parent-join-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/hppc-0.7.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-cli-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-page-model-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/ehcache-2.10.6.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-search-lucene-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-lang3-3.8.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-photo-service-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/guava-27.1-jre.jar:/usr/java/jpress/starter/target/starter-2.0/lib/logback-core-1.2.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jettison-1.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/HdrHistogram-2.1.9.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jopt-simple-5.0.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jfinal-3.8.jar:/usr/java/jpress/starter/target/starter-2.0/lib/groovy-2.4.5-indy.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-photo-service-provider-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-sdk-opensearch-3.3.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-page-service-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-mapper-asl-1.8.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-service-provider-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-grouping-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jboss-websocket-api_1.1_spec-1.1.3.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-databind-2.9.6.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jedis-2.10.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-xc-1.8.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-service-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/javax.json-1.0.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-dataformat-smile-2.8.11.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-rest-high-level-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/logback-classic-1.2.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commons-pool2-2.4.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jsr305-3.0.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-misc-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jcseg-core-2.4.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/thumbnailator-0.4.8.jar:/usr/java/jpress/starter/target/starter-2.0/lib/javax.mail-api-1.6.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/libthrift-0.9.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/failureaccess-1.0.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jaxb-impl-2.2.3-1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jersey-core-1.9.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jersey-json-1.9.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aliyun-java-sdk-ecs-4.2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jfinal-undertow-1.6.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jboss-logging-3.3.2.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-spatial-extras-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/t-digest-3.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/rank-eval-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-page-web-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-search-opensearch-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/core-3.1.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-template-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-highlighter-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jaxb-api-2.2.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/joda-time-2.10.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jdom-1.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-talk-web-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-analyzers-common-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-core-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/error_prone_annotations-2.2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/snakeyaml-1.16.jar:/usr/java/jpress/starter/target/starter-2.0/lib/org.abego.treelayout.core-1.0.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/commonmark-0.12.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/elasticsearch-x-content-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/antlr4-runtime-4.7.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jboot-2.0.8.jar:/usr/java/jpress/starter/target/starter-2.0/lib/cron4j-2.2.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-commons-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/xnio-nio-3.3.8.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-service-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/sharding-jdbc-core-3.1.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/activation-1.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-queries-7.6.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/mysql-connector-java-5.1.47.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-dataformat-cbor-2.8.11.jar:/usr/java/jpress/starter/target/starter-2.0/lib/checker-qual-2.5.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/compiler-0.9.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lang-mustache-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/undertow-websockets-jsr-2.0.19.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-talk-service-api-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/antlr4-4.7.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/undertow-core-2.0.19.Final.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-core-asl-1.8.3.jar:/usr/java/jpress/starter/target/starter-2.0/lib/fst-2.57.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-photo-web-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-article-model-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/module-photo-model-2.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/lucene-backward-codecs-7.5.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/cos-2017.5.jar:/usr/java/jpress/starter/target/starter-2.0/lib/aggs-matrix-stats-client-6.5.4.jar:/usr/java/jpress/starter/target/starter-2.0/lib/sharding-core-3.1.0.jar:/usr/java/jpress/starter/target/starter-2.0/lib/j2objc-annotations-1.1.jar:/usr/java/jpress/starter/target/starter-2.0/lib/stax-api-1.0-2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jackson-core-2.8.8.jar:/usr/java/jpress/starter/target/starter-2.0/lib/httpasyncclient-4.1.2.jar:/usr/java/jpress/starter/target/starter-2.0/lib/jpress-service-provider-2.0.jar
+java.vm.specification.version = 1.8
+sun.arch.data.model = 64
+sun.java.command = io.jpress.Starter
+java.home = /usr/java/jdk1.8.0_211-amd64/jre
+user.language = zh
+java.specification.vendor = Oracle Corporation
+awt.toolkit = sun.awt.X11.XToolkit
+java.vm.info = mixed mode
+java.version = 1.8.0_211
+java.ext.dirs = /usr/java/jdk1.8.0_211-amd64/jre/lib/ext:/usr/java/packages/lib/ext
+sun.boot.class.path = /usr/java/jdk1.8.0_211-amd64/jre/lib/resources.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/rt.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/sunrsasign.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/jsse.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/jce.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/charsets.jar:/usr/java/jdk1.8.0_211-amd64/jre/lib/jfr.jar:/usr/java/jdk1.8.0_211-amd64/jre/classes
+java.vendor = Oracle Corporation
+com.zaxxer.hikari.pool_number = 3
+file.separator = /
+java.vendor.url.bug = http://bugreport.sun.com/bugreport/
+sun.io.unicode.encoding = UnicodeLittle
+sun.font.fontmanager = sun.awt.X11FontManager
+sun.cpu.endian = little
+sun.cpu.isalist =
+```

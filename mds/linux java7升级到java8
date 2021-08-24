@@ -1,0 +1,85 @@
+### 1.第一步先卸载所有老的jdk版本 
+
+目录
+
+[1.第一步先卸载所有老的jdk版本][1._jdk]
+
+[2.第二步安装新版本][2.]
+
+```java
+rpm -qa | grep jdk
+```
+
+![pic_79e22dee.png](http://127.0.0.1:9999/images/pic_79e22dee.png)
+
+使用rpm -e --nodeps 命令删除上面查找的内容： 
+
+```java
+rpm -e --nodeps java-1.6.0-openjdk-devel-1.6.0.38-1.13.10.0.el6_7.x86_64
+```
+
+全部删除完之后，再检查一遍
+
+```java
+ rpm -qa | grep jdk
+```
+
+确认没有了，我们开始删除多余的目录
+
+我们看一下环境变量的配置，确定老版本的jdk目录然后删除，并且删除掉环境变量的配置，最好重新配置，因为不同的版本有区别
+
+```java
+vim /etc/profile
+```
+
+![pic_583c9338.png](http://127.0.0.1:9999/images/pic_583c9338.png)
+
+我们去对应目录下删掉 
+
+```java
+rm -rf jdk1.7.0_79/
+```
+
+### 2.第二步安装新版本 
+
+现在我们oracle官网下载jdk1.8，然后拷贝到服务器，解压安装
+
+```java
+tar -xzvf jdk-8u181-linux-x64.tar.gz
+```
+
+别忘了给权限
+
+```java
+chmod -R 777 /usr/java/jdk1.8.0_181/
+```
+
+现在配置环境变量，在文件末尾增加
+
+  
+
+
+```java
+export JAVA_HOME=/usr/java/jdk1.8.0_181
+export JRE_HOME=$JAVA_HOME/jre
+export CLASSPATH=$JAVA_HOME/lib:$CLASSPATH
+export PATH=$JAVA_HOME/bin:$JRE_HOME/bin:$PATH
+```
+
+让环境变量立刻生效
+
+```java
+ source /etc/profile
+```
+
+```java
+java -version
+```
+
+![pic_712a2c1b.png](http://127.0.0.1:9999/images/pic_712a2c1b.png)
+
+升级成功！
+
+
+[1._jdk]: #1.%E7%AC%AC%E4%B8%80%E6%AD%A5%E5%85%88%E5%8D%B8%E8%BD%BD%E6%89%80%E6%9C%89%E8%80%81%E7%9A%84jdk%E7%89%88%E6%9C%AC
+[2.]: #2.%E7%AC%AC%E4%BA%8C%E6%AD%A5%E5%AE%89%E8%A3%85%E6%96%B0%E7%89%88%E6%9C%AC
