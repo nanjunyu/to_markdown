@@ -13,6 +13,8 @@ public class CSDNHandleService extends MarkDownService {
     protected Document getHtmlContent(Document document) {
         Element mainElement = document.getElementById("mainBox");
 
+
+
         // 不是 Markdown，则获取 HTML
         if(mainElement == null){
             mainElement = document.getElementById("htmledit_views");

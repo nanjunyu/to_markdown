@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @Author: lty
@@ -36,7 +37,7 @@ public  class ResolveService {
 
 
 
-    public static String get (MarkDown markDown){
+    public static Map<String,Object> get (MarkDown markDown){
         String website = MarkDownUtil.getUrlOrigin(markDown);
         initMap(website);
         return serviceMap.get(website)

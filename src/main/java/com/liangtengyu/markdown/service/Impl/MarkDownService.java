@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.IOException;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -33,10 +35,13 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class MarkDownService implements HandleService {
 
     @Override
-    public String getBlogContent(MarkDown markDown) {
+    public Map<String,Object> getBlogContent(MarkDown markDown) {
+        Map<String,Object> retMam=new HashMap<>();
 
         // 1. 获取 Document
         Document document = getDocument(markDown.getBlogUrl());
+
+        String title = document.getElementById("articleContentId").text();
 
         // 2.提取 Document 中的博文信息
         document = getHtmlContent(document);
@@ -44,10 +49,12 @@ public abstract class MarkDownService implements HandleService {
         // 3.下载图片，并进行替换
         String htmlContent = convertHtml(markDown, document);
 
+
         // 转换为 markdown
         Remark remark = new Remark();
-
-        return remark.convert(htmlContent);
+        retMam.put("content",remark.convert(htmlContent));
+        retMam.put("title",title);
+        return retMam;
     }
 
 
@@ -193,8 +200,14 @@ public abstract class MarkDownService implements HandleService {
     public void doDownloadImages(File imageFile, String imageSrc) {
         //下载图片⬇️
         log.info("catch picture :{}", imageSrc);
-        byte[] bytes = HttpUtil.downloadBytes(imageSrc);
-        ImageUtil.byte2image(bytes, imageFile.getPath());
+        try {
+            byte[] bytes = HttpUtil.downloadBytes(imageSrc);
+            ImageUtil.byte2image(bytes, imageFile.getPath());
+        }catch (Exception e){
+            e.getMessage();
+        }
+
+
     }
 
     /**

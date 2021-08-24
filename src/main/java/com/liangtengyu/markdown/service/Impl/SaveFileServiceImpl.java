@@ -32,7 +32,7 @@ public class SaveFileServiceImpl implements SaveFileService {
     @Autowired
     SETTINGDao settingDao;
     @Override
-    public String saveToFile(String result, String id, MarkDown markDownm) throws IOException {
+    public String saveToFile(String result, String id, MarkDown markDownm,String fileName) throws IOException {
         SETTING mdSavePath = settingDao.findbyname("MD_Save_Path");
         System.out.println(mdSavePath);
         //通过此接口,将markdown保存为文本
@@ -40,8 +40,8 @@ public class SaveFileServiceImpl implements SaveFileService {
         if (!f.exists()) {
             f.mkdirs();
         }
-        String filename = MarkDownUtil.generatorFileName();
-        File mdFile = new File(f, filename);
+      // String filename = MarkDownUtil.generatorFileName();
+        File mdFile = new File(f, fileName);
         if (!mdFile.exists()) {
             mdFile.createNewFile();
         }
@@ -49,7 +49,7 @@ public class SaveFileServiceImpl implements SaveFileService {
         outputStream.write(result.getBytes());
         outputStream.close();
 
-        String savepath = mdSavePath.getConfigValue() + "/" + filename;
+        String savepath = mdSavePath.getConfigValue() + "/" + fileName;
 
         saveToDatabase(result, id, savepath,markDownm);
         return "MD文件保存到:"+savepath;

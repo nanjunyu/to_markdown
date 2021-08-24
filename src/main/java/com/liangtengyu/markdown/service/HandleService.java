@@ -14,7 +14,7 @@ public interface HandleService {
      * @param markDown
      * @return
      */
-    String getBlogContent(MarkDown markDown);
+    Map<String,Object> getBlogContent(MarkDown markDown);
 
 
 
